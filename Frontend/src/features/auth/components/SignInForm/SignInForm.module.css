@@ -1,0 +1,481 @@
+/* ============================================
+   DataSense — Sign In Page Styles
+   ============================================ */
+
+/* ---- Page Container ---- */
+.page {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #06060a;
+  overflow: hidden;
+  padding: 40px 24px;
+}
+
+/* ---- Animated Background ---- */
+.backgroundEffects {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Wave container at bottom */
+.wavesContainer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 280px;
+  overflow: hidden;
+}
+
+/* Glowing dots */
+.dot {
+  position: absolute;
+  border-radius: 50%;
+  animation: dotFloat 8s ease-in-out infinite;
+}
+
+.dot1 {
+  width: 18px;
+  height: 18px;
+  top: 35%;
+  left: 12%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.8) 0%, rgba(124, 58, 237, 0.2) 40%, transparent 70%);
+  animation-delay: 0s;
+  animation-duration: 7s;
+}
+
+.dot2 {
+  width: 12px;
+  height: 12px;
+  top: 25%;
+  right: 18%;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.7) 0%, rgba(167, 139, 250, 0.15) 40%, transparent 70%);
+  animation-delay: 1.5s;
+  animation-duration: 9s;
+}
+
+.dot3 {
+  width: 6px;
+  height: 6px;
+  top: 50%;
+  left: 30%;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.6) 0%, transparent 70%);
+  animation-delay: 3s;
+  animation-duration: 11s;
+}
+
+.dot4 {
+  width: 8px;
+  height: 8px;
+  top: 15%;
+  right: 35%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.5) 0%, transparent 70%);
+  animation-delay: 2s;
+  animation-duration: 8s;
+}
+
+.dot5 {
+  width: 5px;
+  height: 5px;
+  bottom: 40%;
+  right: 10%;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.6) 0%, transparent 70%);
+  animation-delay: 4s;
+  animation-duration: 10s;
+}
+
+@keyframes dotFloat {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translateY(-12px) scale(1.2);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(6px) scale(0.9);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translateY(-8px) scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* ---- Card ---- */
+.card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  background: rgba(17, 17, 24, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 40px;
+  animation: cardFadeIn 0.6s ease forwards;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ---- Logo ---- */
+.logoContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.logoIcon {
+  width: 52px;
+  height: 52px;
+}
+
+/* ---- Title ---- */
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.titleAccent {
+  color: #7c3aed;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #9ca3af;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ---- Form ---- */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---- Input Group ---- */
+.inputGroup {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  pointer-events: none;
+  transition: color 250ms ease;
+  z-index: 1;
+}
+
+.inputIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.input {
+  width: 100%;
+  padding: 14px 16px 14px 48px;
+  background: rgba(10, 10, 18, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  outline: none;
+  transition: border-color 250ms ease, box-shadow 250ms ease;
+}
+
+.input::placeholder {
+  color: #6b7280;
+}
+
+.input:focus {
+  border-color: rgba(124, 58, 237, 0.5);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
+}
+
+.inputWithToggle {
+  padding-right: 48px;
+}
+
+/* ---- Password Toggle ---- */
+.passwordToggle {
+  position: absolute;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 2px;
+  transition: color 250ms ease;
+  z-index: 1;
+}
+
+.passwordToggle:hover {
+  color: #a78bfa;
+}
+
+.passwordToggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---- Forgot Password ---- */
+.forgotRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -4px;
+}
+
+.forgotLink {
+  font-size: 13px;
+  color: #7c3aed;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 200ms ease;
+  text-decoration: none;
+}
+
+.forgotLink:hover {
+  color: #a78bfa;
+}
+
+/* ---- Submit Button ---- */
+.submitButton {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  margin-top: 4px;
+  letter-spacing: 0.01em;
+  position: relative;
+  overflow: hidden;
+}
+
+.submitButton::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.submitButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(124, 58, 237, 0.35), 0 0 48px rgba(124, 58, 237, 0.12);
+}
+
+.submitButton:hover::before {
+  opacity: 1;
+}
+
+.submitButton:active {
+  transform: translateY(0);
+}
+
+.submitButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ---- Error Message ---- */
+.errorMessage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 10px;
+  color: #fca5a5;
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  animation: errorSlideIn 0.3s ease;
+}
+
+.errorMessage svg {
+  flex-shrink: 0;
+}
+
+@keyframes errorSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- Button Spinner ---- */
+.buttonSpinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spinnerIcon {
+  width: 18px;
+  height: 18px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Divider ---- */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dividerText {
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+/* ---- Social Buttons ---- */
+.socialButtons {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.socialButton {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #16161f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 250ms ease, background 250ms ease, transform 200ms ease;
+}
+
+.socialButton:hover {
+  border-color: rgba(124, 58, 237, 0.4);
+  background: #1a1a25;
+  transform: translateY(-1px);
+}
+
+.socialButton svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* ---- Footer ---- */
+.footer {
+  text-align: center;
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.footerLink {
+  color: #7c3aed;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 200ms ease;
+  text-decoration: none;
+}
+
+.footerLink:hover {
+  color: #a78bfa;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 520px) {
+  .page {
+    padding: 24px 16px;
+    align-items: flex-start;
+    padding-top: 48px;
+  }
+
+  .card {
+    padding: 28px 22px;
+    border-radius: 14px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .socialButton {
+    width: 48px;
+    height: 48px;
+  }
+
+  .socialButton svg {
+    width: 20px;
+    height: 20px;
+  }
+}
