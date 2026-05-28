@@ -1,0 +1,155 @@
+.footer {
+  background-color: #06060a;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 60px 24px 30px;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* ---- Top section (columns) ---- */
+.top {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 48px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Brand column */
+.brandColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logoText {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.brandDescription {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #9ca3af;
+  max-width: 300px;
+}
+
+.socialIcons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.socialLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #9ca3af;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.socialLink:hover {
+  color: #ffffff;
+  background: rgba(124, 58, 237, 0.15);
+  border-color: rgba(124, 58, 237, 0.3);
+}
+
+/* Link columns */
+.linkColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.columnTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.linkList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.link {
+  font-size: 14px;
+  color: #9ca3af;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: #ffffff;
+}
+
+/* ---- Bottom bar ---- */
+.bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 24px;
+}
+
+.copyright {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.legalLinks {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .top {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px 32px;
+  }
+
+  .brandColumn {
+    grid-column: 1 / -1;
+  }
+
+  .brandDescription {
+    max-width: 100%;
+  }
+
+  .bottom {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .top {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}

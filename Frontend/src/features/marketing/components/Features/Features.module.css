@@ -1,0 +1,153 @@
+.section {
+  background-color: #0a0a12;
+  padding: 100px 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── Section Header ── */
+.header {
+  text-align: center;
+  margin-bottom: 64px;
+}
+
+.label {
+  display: inline-block;
+  color: #7c3aed;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 40px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 20px;
+  line-height: 1.2;
+}
+
+.titleAccent {
+  color: #7c3aed;
+  font-style: italic;
+  font-family: 'Playfair Display', serif;
+}
+
+.subtitle {
+  color: #9ca3af;
+  font-size: 17px;
+  line-height: 1.7;
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+/* ── Card Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+/* ── Feature Card ── */
+.card {
+  background: #111118;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(124, 58, 237, 0.3);
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.12);
+}
+
+.iconWrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(124, 58, 237, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.iconWrap svg {
+  width: 22px;
+  height: 22px;
+  color: #a78bfa;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 10px;
+}
+
+.cardDesc {
+  font-size: 14px;
+  color: #9ca3af;
+  line-height: 1.6;
+  margin: 0 0 auto;
+  padding-bottom: 18px;
+}
+
+.learnMore {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #7c3aed;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.learnMore:hover {
+  color: #a78bfa;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .title {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding: 72px 0;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .subtitle {
+    font-size: 15px;
+  }
+}

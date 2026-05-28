@@ -1,0 +1,261 @@
+/* ===== Header — DataSense Landing Page ===== */
+
+/* ---------- wrapper ---------- */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 68px;
+  z-index: 1000;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- inner container ---------- */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+/* ---------- logo ---------- */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.logoText {
+  font-family: 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* ---------- desktop navigation ---------- */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.navLink {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #9ca3af;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  line-height: 1;
+}
+
+.navLink:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.dropdownArrow {
+  width: 12px;
+  height: 12px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.navLink:hover .dropdownArrow {
+  opacity: 1;
+}
+
+/* ---------- right side actions ---------- */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.ctaButton {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #a78bfa;
+  background: transparent;
+  border: 1px solid rgba(124, 58, 237, 0.5);
+  border-radius: 8px;
+  padding: 8px 18px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.ctaButton:hover {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: #ffffff;
+}
+
+/* ---------- hamburger (mobile) ---------- */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.hamburger:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.hamburgerLine {
+  width: 20px;
+  height: 2px;
+  background: #9ca3af;
+  border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.2s ease;
+}
+
+.hamburger:hover .hamburgerLine {
+  background: #ffffff;
+}
+
+/* hamburger → X animation */
+.hamburgerOpen .hamburgerLine:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.hamburgerOpen .hamburgerLine:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburgerOpen .hamburgerLine:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ---------- mobile menu overlay ---------- */
+.mobileMenu {
+  display: none;
+  position: fixed;
+  top: 68px;
+  left: 0;
+  width: 100%;
+  height: calc(100vh - 68px);
+  background: rgba(6, 6, 10, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  flex-direction: column;
+  padding: 24px;
+  z-index: 999;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  overflow-y: auto;
+}
+
+.mobileMenuOpen {
+  display: flex;
+}
+
+.mobileNavLink {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #9ca3af;
+  text-decoration: none;
+  padding: 14px 0;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.mobileNavLink:hover {
+  color: #ffffff;
+}
+
+.mobileCta {
+  margin-top: 24px;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #ffffff;
+  background: #7c3aed;
+  border: 1px solid #7c3aed;
+  border-radius: 8px;
+  padding: 14px 24px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+  width: 100%;
+}
+
+.mobileCta:hover {
+  background: #6d28d9;
+  border-color: #6d28d9;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 768px) {
+  .nav {
+    display: none;
+  }
+
+  .ctaButton {
+    display: none;
+  }
+
+  .hamburger {
+    display: flex;
+  }
+}
