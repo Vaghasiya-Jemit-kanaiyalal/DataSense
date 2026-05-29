@@ -1,21 +1,19 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { api, authFetch } from '@/services/api';
+import {
+  activateDataset,
+  resumeActiveDataset,
+  setActiveDatasetId,
+  type DatasetPayload,
+} from '@/services/data';
+import { useAuthHydrated } from '@/hooks';
+import { useAuthStore } from '@/store/authStore';
 import styles from './UploadPanel.module.css';
 
-/* ──── Sample resumed datasets ──── */
-const RESUMED_DATASETS = [
-  {
-    id: 1,
-    name: 'Users_Resumed_Dataset.csv',
-    type: 'CSV',
-    size: '2.45 MB',
-    uploadedAt: 'Uploaded just now',
-    rows: '1,245',
-    columns: '18',
-    badgeColor: '#7c3aed',
-  },
-];
+/* ──── Resumed datasets are fetched from server ──── */
 
 /* ──── File type badge icon ──── */
 function FileIcon({ type, badgeColor }: { type: string; badgeColor: string }) {
@@ -69,8 +67,22 @@ function CloudUploadIcon() {
 }
 
 export default function UploadPanel() {
+  const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
+  type DatasetRow = {
+    id: number;
+    name: string;
+    mime?: string;
+    size?: number;
+    uploadedAt?: string;
+    rows?: number;
+    columns?: number;
+    isActive?: boolean;
+  };
+  const [datasets, setDatasets] = useState<DatasetRow[]>([]);
+  const [activeResume, setActiveResume] = useState<DatasetPayload | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hydrated = useAuthHydrated();
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -87,6 +99,67 @@ export default function UploadPanel() {
     setIsDragging(false);
     // Handle file drop logic
   }, []);
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  useEffect(() => {
+    if (!hydrated || !isAuthenticated) return;
+
+    async function load() {
+      try {
+        const data = await api.get<{ datasets: DatasetRow[] }>('/data/mine');
+        setDatasets(data.datasets || []);
+      } catch {
+        /* ignore */
+      }
+
+      const resumed = await resumeActiveDataset();
+      if (resumed?.dataset_id) {
+        setActiveResume(resumed);
+        setActiveDatasetId(resumed.dataset_id);
+      }
+    }
+
+    load();
+  }, [hydrated, isAuthenticated]);
+
+  const resumeDataset = useCallback(
+    async (id: number, target: 'preview' | 'cleaning') => {
+      try {
+        await activateDataset(id);
+        setActiveDatasetId(id);
+        router.push(`/${target}?datasetId=${id}`);
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    [router],
+  );
+
+  // Upload handler
+  const uploadFile = useCallback(async (file: File) => {
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await authFetch('/data/upload', { method: 'POST', body: fd });
+      if (res.ok) {
+        const uploaded = await res.json();
+        if (uploaded?.dataset_id) {
+          setActiveDatasetId(uploaded.dataset_id);
+          router.push(`/preview?datasetId=${uploaded.dataset_id}`);
+          return;
+        }
+        const data = await api.get<{ datasets: DatasetRow[] }>('/data/mine');
+        setDatasets(data.datasets || []);
+      } else {
+        const text = await res.text().catch(() => null);
+        console.error('Upload failed', res.status, text);
+        if (res.status === 401) router.push('/signin');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [router]);
 
   const handleChooseFile = useCallback(() => {
     fileInputRef.current?.click();
@@ -167,32 +240,73 @@ export default function UploadPanel() {
             accept=".csv,.xlsx,.xls,.json"
             className={styles.fileInput}
             tabIndex={-1}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadFile(f);
+            }}
           />
         </div>
 
+        {activeResume && (
+          <div className={styles.resumeBanner}>
+            <div>
+              <p className={styles.resumeTitle}>Continue where you left off</p>
+              <p className={styles.resumeMeta}>
+                {activeResume.original_filename ?? `Dataset #${activeResume.dataset_id}`}
+                {' · '}
+                {activeResume.total_steps ?? 0} cleaning steps saved
+                {activeResume.rows ? ` · ${activeResume.rows.toLocaleString()} rows` : ''}
+              </p>
+            </div>
+            <div className={styles.resumeActions}>
+              <button
+                type="button"
+                className={styles.previewBtn}
+                onClick={() => resumeDataset(activeResume.dataset_id, 'preview')}
+              >
+                Preview
+              </button>
+              <button
+                type="button"
+                className={styles.resumeCleanBtn}
+                onClick={() => resumeDataset(activeResume.dataset_id, 'cleaning')}
+              >
+                Continue Cleaning
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ---- Resumed Datasets ---- */}
         <div className={styles.resumedSection}>
-          <h2 className={styles.resumedLabel}>RESUMED DATASETS</h2>
+          <h2 className={styles.resumedLabel}>YOUR DATASETS</h2>
 
           <div className={styles.datasetList}>
-            {RESUMED_DATASETS.map((dataset) => (
-              <div key={dataset.id} className={styles.datasetCard}>
+            {datasets.length === 0 && (
+              <p className={styles.emptyList}>No datasets yet. Upload a file above.</p>
+            )}
+            {datasets.map((dataset) => (
+              <div key={dataset.id} className={`${styles.datasetCard} ${dataset.isActive ? styles.datasetActive : ''}`}>
                 <div className={styles.datasetLeft}>
-                  <FileIcon type={dataset.type} badgeColor={dataset.badgeColor} />
+                  <FileIcon type={dataset.mime?.split('/')?.[1]?.toUpperCase() ?? 'FILE'} badgeColor={'#7c3aed'} />
                   <div className={styles.datasetInfo}>
                     <p className={styles.datasetName}>{dataset.name}</p>
                     <p className={styles.datasetMeta}>
-                      {dataset.type} &bull; {dataset.size} &bull; {dataset.uploadedAt}
+                      {dataset.mime} &bull; {dataset.size} &bull; {dataset.uploadedAt}
                     </p>
                   </div>
                 </div>
 
                 <div className={styles.datasetRight}>
                   <span className={styles.datasetStats}>
-                    {dataset.rows} Rows &bull; {dataset.columns} Columns
+                    {dataset.rows ?? '-'} Rows &bull; {dataset.columns ?? '-'} Columns
                   </span>
-                  <button type="button" className={styles.previewBtn}>
-                    Preview
+                  <button
+                    type="button"
+                    className={styles.previewBtn}
+                    onClick={() => resumeDataset(dataset.id, 'preview')}
+                  >
+                    {dataset.isActive ? 'Resume' : 'Open'}
                   </button>
                   <button type="button" className={styles.moreBtn} aria-label="More options">
                     <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16">

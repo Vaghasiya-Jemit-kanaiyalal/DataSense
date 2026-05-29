@@ -1,7 +1,8 @@
 /**
- * Base API client for making typed HTTP requests.
- * Wraps fetch with error handling, JSON parsing, and auth token injection.
+ * Base API client with auth + automatic token refresh on 401.
  */
+
+import { useAuthStore } from '@/store/authStore';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api';
@@ -20,41 +21,95 @@ class ApiError extends Error {
   }
 }
 
-/**
- * Read the access token from the persisted Zustand auth store.
- */
 function getAccessToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  return useAuthStore.getState().accessToken;
+}
+
+/** Headers for multipart uploads (do not set Content-Type). */
+export function getAuthHeaders(): HeadersInit {
+  const token = getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function tryRefreshToken(): Promise<boolean> {
+  return useAuthStore.getState().refreshSession();
+}
+
+async function parseErrorMessage(response: Response): Promise<string> {
   try {
-    const raw = localStorage.getItem('datasense-auth');
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed?.state?.accessToken ?? null;
+    const errBody = await response.json();
+    return errBody.error || errBody.message || response.statusText;
   } catch {
-    return null;
+    return response.statusText;
   }
 }
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { body, headers, ...rest } = options;
-
   const token = getAccessToken();
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    ...rest,
-  });
+  const doFetch = (authToken: string | null) =>
+    fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        ...headers,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      ...rest,
+    });
+
+  let response = await doFetch(token);
+
+  if (response.status === 401 && token) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      response = await doFetch(getAccessToken());
+    }
+  }
 
   if (!response.ok) {
-    throw new ApiError(response.status, `API error: ${response.statusText}`);
+    const message = await parseErrorMessage(response);
+    if (response.status === 401) {
+      useAuthStore.getState().logout();
+    }
+    throw new ApiError(response.status, message);
   }
 
   return response.json() as Promise<T>;
+}
+
+/** Authenticated fetch for FormData / file uploads. */
+export async function authFetch(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<Response> {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  const token = getAccessToken();
+
+  const doFetch = (authToken: string | null) =>
+    fetch(url, {
+      ...options,
+      headers: {
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        ...options.headers,
+      },
+    });
+
+  let response = await doFetch(token);
+
+  if (response.status === 401 && token) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      response = await doFetch(getAccessToken());
+    }
+  }
+
+  if (response.status === 401) {
+    useAuthStore.getState().logout();
+  }
+
+  return response;
 }
 
 export const api = {

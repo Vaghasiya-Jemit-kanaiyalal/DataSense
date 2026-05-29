@@ -11,15 +11,22 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // Small delay to allow Zustand to hydrate from localStorage
-    const timer = setTimeout(() => {
-      if (!isAuthenticated) {
+    const unsub = useAuthStore.persist.onFinishHydration(() => {
+      const { isAuthenticated, accessToken } = useAuthStore.getState();
+      if (!isAuthenticated || !accessToken) {
         router.replace('/signin');
       }
       setIsChecking(false);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [isAuthenticated, router]);
+    });
+    if (useAuthStore.persist.hasHydrated()) {
+      const { isAuthenticated, accessToken } = useAuthStore.getState();
+      if (!isAuthenticated || !accessToken) {
+        router.replace('/signin');
+      }
+      setIsChecking(false);
+    }
+    return unsub;
+  }, [router]);
 
   if (isChecking) {
     return (

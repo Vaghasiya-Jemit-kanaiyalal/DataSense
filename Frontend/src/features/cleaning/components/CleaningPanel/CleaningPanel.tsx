@@ -1,202 +1,326 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './CleaningPanel.module.css';
+import { useAuthHydrated } from '@/hooks';
+import {
+  cleanDataset,
+  getActiveDatasetId,
+  getPreview,
+  resumeActiveDataset,
+  setActiveDatasetId,
+  undoStep,
+  type DatasetPayload,
+  type PipelineStepInfo,
+} from '@/services/data';
 
-const stats = [
-  { label: 'Total Rows', value: '17,890', tone: 'blue', icon: 'database' },
-  { label: 'Total Columns', value: '17', tone: 'purple', icon: 'grid' },
-  { label: 'Missing Values', value: '0', tone: 'amber', icon: 'warning' },
-  { label: 'Outliers', value: '2,514', tone: 'red', icon: 'pulse' },
-  { label: 'Numeric Columns', value: '6', tone: 'teal', icon: 'hash' },
-  { label: 'Categorical Columns', value: '11', tone: 'green', icon: 'text' },
-];
+const CHAIN_COLORS = ['orange', 'blue', 'green'] as const;
+const PAGE_SIZE = 20;
 
-const columns = [
-  { name: 'age', type: 'Numeric', missing: '0 missing', tone: 'blue' },
-  { name: 'job', type: 'Categorical', missing: '0 missing', tone: 'green' },
-  { name: 'marital', type: 'Categorical', missing: '0 missing', tone: 'green' },
-  { name: 'education', type: 'Categorical', missing: '0 missing', tone: 'green' },
-  { name: 'default', type: 'Boolean', missing: '0 missing', tone: 'green' },
-  { name: 'balance', type: 'Numeric', missing: '513 missing', tone: 'blue', alert: true },
-  { name: 'housing', type: 'Boolean', missing: '0 missing', tone: 'green' },
-];
-
-const cleaningActions = [
-  { title: 'Drop Duplicates', detail: 'Remove duplicate rows from dataset', tone: 'purple', icon: 'beaker' },
-  { title: 'Replace Values', detail: 'Replace specific values in columns', tone: 'green', icon: 'refresh' },
-  { title: 'Handle Missing Values', detail: 'Fill or remove missing data', tone: 'amber', icon: 'warning' },
-  { title: 'Handle Imbalance', detail: 'Balance target classes', tone: 'purple', icon: 'scale' },
-  { title: 'Handle Outliers', detail: 'Detect and handle outliers', tone: 'red', icon: 'target' },
-  { title: 'Encoding', detail: 'Convert categorical to numeric', tone: 'green', icon: 'encode' },
-  { title: 'Feature Scaling', detail: 'Scale numerical features', tone: 'blue', icon: 'filter' },
-];
-
-const utilityActions = [
-  { title: 'Drop Column', detail: 'Remove unwanted columns', tone: 'red', icon: 'trash' },
-  { title: 'Preview Data', detail: 'View processed data', tone: 'blue', icon: 'eye' },
-];
-
-function Icon({ name }: { name: string }) {
-  if (name === 'database') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7c0 2 14 2 14 0S5 5 5 7Zm0 0v5c0 2 14 2 14 0V7M5 12v5c0 2 14 2 14 0v-5" /></svg>;
-  }
-  if (name === 'grid') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z" /></svg>;
-  }
-  if (name === 'warning') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 21 20H3L12 4Zm0 5v5m0 3h.01" /></svg>;
-  }
-  if (name === 'pulse') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6" /></svg>;
-  }
-  if (name === 'hash') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4 6 20M16 4l-2 16M4 9h16M3 15h16" /></svg>;
-  }
-  if (name === 'text') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14M12 5v14M8 19h8" /></svg>;
-  }
-  if (name === 'beaker') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3v5l-4 7a4 4 0 0 0 3.5 6h7a4 4 0 0 0 3.5-6l-4-7V3M8 3h8M7 16h10" /></svg>;
-  }
-  if (name === 'refresh') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M18.5 9A7 7 0 0 0 6.8 6.7M5.5 15a7 7 0 0 0 11.7 2.3" /></svg>;
-  }
-  if (name === 'scale') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M5 8h14M7 8l-3 6h6L7 8Zm10 0-3 6h6l-3-6Z" /></svg>;
-  }
-  if (name === 'target') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M16 8a5.7 5.7 0 1 1-8 8 5.7 5.7 0 0 1 8-8Z" /></svg>;
-  }
-  if (name === 'encode') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 15 4-4 3 3 5-7M5 20c4-2 8-2 12 0M17 7h3v3" /></svg>;
-  }
-  if (name === 'filter') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7v6l-4 2v-8L4 5Z" /></svg>;
-  }
-  if (name === 'trash') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12M9 7V4h6v3M8 10v9h8v-9M10 12v5M14 12v5" /></svg>;
-  }
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Zm9.5 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /></svg>;
+function sumMissing(stats: DatasetPayload['statistics']) {
+  return Object.values(stats).reduce((a, s) => a + (s.missing_count || 0), 0);
 }
 
-function Chevron() {
-  return <svg className={styles.chevron} viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg>;
+function sumOutliers(stats: DatasetPayload['statistics']) {
+  return Object.values(stats).reduce((a, s) => a + (s.outliers || 0), 0);
 }
 
 export default function CleaningPanel() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [payload, setPayload] = useState<DatasetPayload | null>(null);
+  const [stepHistory, setStepHistory] = useState<PipelineStepInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
+  const [resolvedId, setResolvedId] = useState<number | null>(null);
+  const hydrated = useAuthHydrated();
+
+  const queryId = searchParams.get('datasetId');
+
+  const datasetId = useMemo(() => {
+    if (queryId) return Number(queryId);
+    return resolvedId ?? getActiveDatasetId();
+  }, [queryId, resolvedId]);
+
+  const applyPayload = (data: DatasetPayload) => {
+    setPayload(data);
+    setStepHistory(data.pipeline_steps ?? []);
+    setActiveDatasetId(data.dataset_id);
+    setResolvedId(data.dataset_id);
+  };
+
+  const load = useCallback(async (id: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getPreview(id, PAGE_SIZE, 1);
+      applyPayload(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load dataset');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+
+    async function init() {
+      if (queryId) {
+        await load(Number(queryId));
+        return;
+      }
+      const resumed = await resumeActiveDataset();
+      if (resumed) {
+        applyPayload(resumed);
+        if (resumed.ml_ready === false && resumed.dataset_id) {
+          await load(resumed.dataset_id);
+        }
+        router.replace(`/cleaning?datasetId=${resumed.dataset_id}`);
+      }
+    }
+    init();
+  }, [queryId, load, router, hydrated]);
+
+  const runClean = async (body: Omit<Parameters<typeof cleanDataset>[0], 'dataset_id'>) => {
+    if (!datasetId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await cleanDataset({ dataset_id: datasetId, ...body });
+      applyPayload(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Cleaning failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!datasetId || stepHistory.length === 0) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await undoStep(datasetId);
+      applyPayload(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Undo failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stats = payload
+    ? [
+        { label: 'Total Rows', value: payload.rows.toLocaleString(), tone: 'blue' },
+        { label: 'Total Columns', value: String(payload.columns), tone: 'purple' },
+        { label: 'Missing Values', value: String(sumMissing(payload.statistics)), tone: 'amber' },
+        { label: 'Outliers', value: String(sumOutliers(payload.statistics)), tone: 'red' },
+        { label: 'Numeric Columns', value: String(payload.numerical_columns.length), tone: 'teal' },
+        { label: 'Categorical Columns', value: String(payload.categorical_columns.length), tone: 'green' },
+      ]
+    : [];
+
+  const allColumns = payload
+    ? [...payload.numerical_columns, ...payload.categorical_columns]
+    : [];
+
+  if (!datasetId && !loading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.container}>
+          <p>Upload a dataset first, then return here to resume cleaning.</p>
+          <button type="button" className={styles.finalizeButton} onClick={() => router.push('/upload')}>
+            Go to Upload
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
         <section className={styles.hero}>
           <div>
             <h1>Data Cleaning</h1>
-            <p>Inspect, clean, and prepare your dataset by handling missing values, outliers, and improving feature quality before further processing.</p>
-          </div>
-          <div className={styles.steps} aria-label="Cleaning steps">
-            <div className={styles.stepActive}>
-              <span>1</span>
-              <strong>Missing Values</strong>
-              <small>Step 1</small>
-            </div>
-            <div className={styles.stepLine} />
-            <div className={styles.step}>
-              <span>2</span>
-              <strong>Missing Values</strong>
-              <small>Step 2</small>
-            </div>
+            <p>
+              Inspect, clean, and prepare your dataset.
+              {datasetId ? ` Dataset #${datasetId}` : ''}
+              {loading ? ' · processing…' : ''}
+            </p>
           </div>
         </section>
 
-        <section className={styles.statsGrid}>
-          {stats.map((stat) => (
-            <article key={stat.label} className={styles.statCard}>
-              <div className={`${styles.iconBox} ${styles[stat.tone]}`}>
-                <Icon name={stat.icon} />
-              </div>
-              <div>
-                <p>{stat.label}</p>
-                <strong>{stat.value}</strong>
-              </div>
-            </article>
-          ))}
-        </section>
+        {error && <p className={styles.errorBanner} role="alert">{error}</p>}
 
-        <section className={styles.mainGrid}>
-          <article className={styles.panel}>
-            <h2>Columns Overview</h2>
-            <div className={styles.list}>
-              {columns.map((column) => (
-                <button className={styles.rowButton} type="button" key={column.name}>
-                  <span className={`${styles.iconBox} ${styles[column.tone]}`}><Icon name={column.tone === 'blue' ? 'hash' : 'text'} /></span>
-                  <span className={styles.rowText}>
-                    <strong>{column.name}</strong>
-                    <small className={styles[column.tone]}>{column.type}</small>
-                  </span>
-                  <span className={column.alert ? styles.alertText : styles.mutedText}>{column.missing}</span>
-                  <Chevron />
-                </button>
+        {payload && (
+          <>
+            <section className={styles.statsGrid}>
+              {stats.map((stat) => (
+                <article key={stat.label} className={`${styles.statCard} ${styles[stat.tone]}`}>
+                  <div><p>{stat.label}</p><strong>{stat.value}</strong></div>
+                </article>
               ))}
-            </div>
-          </article>
+            </section>
 
-          <article className={styles.panel}>
-            <h2>Cleaning Actions</h2>
-            <div className={styles.list}>
-              {cleaningActions.map((action) => (
-                <button className={styles.rowButton} type="button" key={action.title}>
-                  <span className={`${styles.iconBox} ${styles[action.tone]}`}><Icon name={action.icon} /></span>
-                  <span className={styles.rowText}>
-                    <strong>{action.title}</strong>
-                    <small>{action.detail}</small>
-                  </span>
-                  <Chevron />
-                </button>
-              ))}
-            </div>
-          </article>
+            <section className={styles.mainGrid}>
+              <article className={styles.panel}>
+                <h2>Columns Overview</h2>
+                <div className={styles.list}>
+                  {allColumns.map((name) => {
+                    const colStats = payload.statistics[name];
+                    const isNum = payload.numerical_columns.includes(name);
+                    const missing = colStats?.missing_count ?? 0;
+                    return (
+                      <button
+                        className={`${styles.rowButton} ${selectedColumn === name ? styles.rowSelected : ''}`}
+                        type="button"
+                        key={name}
+                        onClick={() => setSelectedColumn(name)}
+                      >
+                        <span className={styles.rowText}>
+                          <strong>{name}</strong>
+                          <small className={isNum ? styles.blue : styles.green}>
+                            {isNum ? 'Numeric' : 'Categorical'}
+                          </small>
+                        </span>
+                        <span className={missing > 0 ? styles.alertText : styles.mutedText}>
+                          {missing} missing
+                          {isNum && colStats?.outliers ? ` · ${colStats.outliers} outliers` : ''}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </article>
 
-          <div className={styles.sideStack}>
-            <article className={styles.panel}>
-              <h2>Utility Actions</h2>
-              <div className={styles.list}>
-                {utilityActions.map((action) => (
-                  <button className={styles.rowButton} type="button" key={action.title}>
-                    <span className={`${styles.iconBox} ${styles[action.tone]}`}><Icon name={action.icon} /></span>
-                    <span className={styles.rowText}>
-                      <strong>{action.title}</strong>
-                      <small>{action.detail}</small>
-                    </span>
-                    <Chevron />
+              <article className={styles.panel}>
+                <h2>Cleaning Actions</h2>
+                <div className={styles.list}>
+                  <button
+                    className={styles.rowButton}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => runClean({ action: 'drop_duplicates', strategy: 'auto' })}
+                  >
+                    <span className={styles.rowText}><strong>Drop Duplicates</strong></span>
                   </button>
-                ))}
-              </div>
-            </article>
-
-            <article className={styles.panel}>
-              <div className={styles.controlHeader}>
-                <h2>Dataset Controls</h2>
-                <span>3 Steps</span>
-              </div>
-              <div className={styles.controls}>
-                <div className={styles.controlRail} aria-hidden="true">
-                  <span className={styles.orange}>1</span>
-                  <i />
-                  <span className={styles.blue}>2</span>
-                  <i />
-                  <span className={styles.green}>3</span>
+                  <button
+                    className={styles.rowButton}
+                    type="button"
+                    disabled={loading || !selectedColumn}
+                    onClick={() =>
+                      selectedColumn &&
+                      runClean({ action: 'missing_values', strategy: 'mean', columns: [selectedColumn] })
+                    }
+                  >
+                    <span className={styles.rowText}>
+                      <strong>Handle Missing Values</strong>
+                      <small>{selectedColumn ? `Mean · ${selectedColumn}` : 'Select a column'}</small>
+                    </span>
+                  </button>
+                  <button
+                    className={styles.rowButton}
+                    type="button"
+                    disabled={loading || !selectedColumn}
+                    onClick={() =>
+                      selectedColumn &&
+                      runClean({ action: 'outliers', strategy: 'cap', columns: [selectedColumn] })
+                    }
+                  >
+                    <span className={styles.rowText}>
+                      <strong>Handle Outliers</strong>
+                      <small>{selectedColumn || 'Select a column'}</small>
+                    </span>
+                  </button>
+                  <button
+                    className={styles.rowButton}
+                    type="button"
+                    disabled={loading || !selectedColumn}
+                    onClick={() => {
+                      if (!selectedColumn) return;
+                      const oldVal = window.prompt('Value to replace:');
+                      const newVal = window.prompt('Replace with:');
+                      if (oldVal == null || newVal == null) return;
+                      runClean({
+                        action: 'replace_values',
+                        columns: [selectedColumn],
+                        old_value: oldVal,
+                        new_value: newVal,
+                      });
+                    }}
+                  >
+                    <span className={styles.rowText}><strong>Replace Values</strong></span>
+                  </button>
                 </div>
-                <div className={styles.controlButtons}>
-                  <button className={styles.undoButton} type="button">Undo Last Step</button>
-                  <button className={styles.downloadButton} type="button">Download CSV</button>
-                  <button className={styles.finalizeButton} type="button">Finalize Dataset</button>
-                </div>
-              </div>
-            </article>
-          </div>
-        </section>
+              </article>
 
-        <button className={styles.visualizeButton} type="button">
-          <Icon name="encode" />
-          Let&apos;s Visualize It
-        </button>
+              <div className={styles.sideStack}>
+                <article className={styles.panel}>
+                  <div className={styles.controlHeader}>
+                    <h2>Dataset Controls</h2>
+                    <span>{stepHistory.length} Steps</span>
+                  </div>
+                  <div className={styles.controls}>
+                    <div className={styles.controlRail} aria-label="Cleaning step chain">
+                      {stepHistory.length === 0 ? (
+                        <span className={styles.chainEmpty}>0</span>
+                      ) : (
+                        stepHistory.map((step, i) => (
+                          <div key={step.step_index} className={styles.chainItem}>
+                            <span className={styles[CHAIN_COLORS[i % 3]]}>{i + 1}</span>
+                            {i < stepHistory.length - 1 && <i />}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className={styles.controlRight}>
+                      <div className={styles.chainLabels}>
+                        {stepHistory.length === 0 ? (
+                          <p className={styles.chainHint}>Steps appear here as you clean (undo removes the last step only).</p>
+                        ) : (
+                          stepHistory.map((step) => (
+                            <div key={step.step_index} className={styles.chainLabelRow}>
+                              <strong>{step.label}</strong>
+                              <small>{step.detail}</small>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <div className={styles.controlButtons}>
+                      <button
+                        className={styles.undoButton}
+                        type="button"
+                        disabled={loading || stepHistory.length === 0}
+                        onClick={handleUndo}
+                      >
+                        Undo Last Step
+                      </button>
+                      <button
+                        className={styles.downloadButton}
+                        type="button"
+                        onClick={() => router.push(`/preview?datasetId=${datasetId}`)}
+                      >
+                        Preview Data
+                      </button>
+                      <button
+                        className={styles.finalizeButton}
+                        type="button"
+                        onClick={() => router.push(`/preview?datasetId=${datasetId}`)}
+                      >
+                        Finalize Dataset
+                      </button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </section>
+          </>
+        )}
       </div>
     </div>
   );

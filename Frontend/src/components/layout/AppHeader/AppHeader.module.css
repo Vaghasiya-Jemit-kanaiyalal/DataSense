@@ -135,6 +135,106 @@
 }
 
 /* ---------- hamburger (mobile) ---------- */
+.actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.accountButton {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  background: rgba(5, 8, 18, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profileAvatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+}
+
+.accountIcon {
+  width: 16px;
+  height: 16px;
+  color: #fff;
+}
+
+.chevronDown {
+  width: 12px;
+  height: 12px;
+}
+
+.signInLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c4b5fd;
+  text-decoration: none;
+  padding: 8px 12px;
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  border-radius: 8px;
+}
+
+.accountMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(8, 12, 24, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  z-index: 1100;
+}
+
+.accountMeta {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  margin-bottom: 8px;
+}
+
+.accountMeta strong {
+  color: #fff;
+  font-size: 0.88rem;
+}
+
+.accountMeta small {
+  color: #94a3b8;
+  font-size: 0.76rem;
+}
+
+.logoutButton {
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.logoutButton:hover {
+  background: rgba(239, 68, 68, 0.28);
+}
+
 .hamburger {
   display: none;
   flex-direction: column;
