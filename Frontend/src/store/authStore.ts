@@ -22,6 +22,7 @@ interface AuthState {
 
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
+  refreshSession: () => Promise<boolean>;
   logout: () => void;
   clearError: () => void;
 }
@@ -42,7 +43,7 @@ function setTokenCookie(token: string | null) {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
@@ -102,7 +103,7 @@ export const useAuthStore = create<AuthState>()(
           setTokenCookie(data.accessToken);
 
           set({
-            user: data.user ?? null,
+            user: data.user ?? { id: 0, name, email },
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
             isAuthenticated: true,
@@ -115,6 +116,26 @@ export const useAuthStore = create<AuthState>()(
             error: err instanceof Error ? err.message : 'Signup failed',
           });
           throw err;
+        }
+      },
+
+      refreshSession: async () => {
+        const refreshToken = get().refreshToken;
+        if (!refreshToken) return false;
+        try {
+          const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+          });
+          if (!res.ok) return false;
+          const data = await res.json();
+          if (!data.accessToken) return false;
+          setTokenCookie(data.accessToken);
+          set({ accessToken: data.accessToken, isAuthenticated: true });
+          return true;
+        } catch {
+          return false;
         }
       },
 

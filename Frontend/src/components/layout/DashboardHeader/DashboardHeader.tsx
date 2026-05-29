@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState, useCallback } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { useAuthStore } from '@/store/authStore';
 import styles from './DashboardHeader.module.css';
 
 /* ──── Inline SVG Icons ──── */
@@ -110,7 +111,22 @@ const NAV_ITEMS = [
 
 export default function DashboardHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
+        setAccountOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
 
   const toggleMobile = useCallback(() => {
     setMobileOpen((prev) => !prev);
@@ -154,12 +170,38 @@ export default function DashboardHeader() {
           </nav>
 
           {/* ---- Right side actions ---- */}
-          <div className={styles.actions}>
-            <button className={styles.accountButton} type="button">
-              <UserIcon className={styles.accountIcon} />
-              Account
+          <div className={styles.actions} ref={accountRef}>
+            <button
+              className={styles.accountButton}
+              type="button"
+              aria-expanded={accountOpen}
+              onClick={() => setAccountOpen((o) => !o)}
+            >
+              <span className={styles.profileAvatar}>
+                <UserIcon className={styles.accountIcon} />
+              </span>
+              {user?.name?.split(' ')[0] ?? 'Account'}
               <ChevronDown className={styles.chevronDown} />
             </button>
+            {accountOpen && (
+              <div className={styles.accountMenu} role="menu">
+                <div className={styles.accountMeta}>
+                  <strong>{user?.name ?? 'User'}</strong>
+                  <small>{user?.email}</small>
+                </div>
+                <button
+                  type="button"
+                  className={styles.logoutButton}
+                  onClick={() => {
+                    logout();
+                    setAccountOpen(false);
+                    router.push('/signin');
+                  }}
+                >
+                  Log out
+                </button>
+              </div>
+            )}
 
             {/* Hamburger — visible only on mobile */}
             <button

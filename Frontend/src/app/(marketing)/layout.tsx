@@ -1,4 +1,5 @@
 import { AppHeader } from '@/components/layout';
+import { Footer } from '@/features/marketing';
 
 export default function MarketingLayout({
   children,
@@ -9,6 +10,7 @@ export default function MarketingLayout({
     <>
       <AppHeader variant="full" />
       <main style={{ paddingTop: '68px' }}>{children}</main>
+      <Footer />
     </>
   );
 }

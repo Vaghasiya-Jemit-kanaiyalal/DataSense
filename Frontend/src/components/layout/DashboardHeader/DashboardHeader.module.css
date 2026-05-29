@@ -168,10 +168,68 @@
 
 /* ---------- right side actions ---------- */
 .actions {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+}
+
+.profileAvatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+}
+
+.accountMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(8, 12, 24, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  z-index: 1100;
+}
+
+.accountMeta {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  margin-bottom: 8px;
+}
+
+.accountMeta strong {
+  color: #fff;
+  font-size: 0.88rem;
+}
+
+.accountMeta small {
+  color: #94a3b8;
+  font-size: 0.76rem;
+}
+
+.logoutButton {
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.logoutButton:hover {
+  background: rgba(239, 68, 68, 0.28);
 }
 
 .accountButton {

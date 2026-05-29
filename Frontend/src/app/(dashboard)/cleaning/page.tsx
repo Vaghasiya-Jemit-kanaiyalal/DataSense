@@ -1,5 +1,10 @@
+import { Suspense } from 'react';
 import { CleaningPanel } from '@/features/cleaning';
 
 export default function CleaningPage() {
-  return <CleaningPanel />;
+  return (
+    <Suspense fallback={null}>
+      <CleaningPanel />
+    </Suspense>
+  );
 }
