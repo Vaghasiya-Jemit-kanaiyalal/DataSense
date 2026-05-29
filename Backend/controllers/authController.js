@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const db = require("../config/db");
 
 const {
@@ -54,6 +55,11 @@ const signup = async (req, res) => {
 
                 res.status(201).json({
                     message: "Signup successful",
+                    user: {
+                        id: user.id,
+                        name,
+                        email
+                    },
                     accessToken,
                     refreshToken
                 });
@@ -150,11 +156,31 @@ const getProfile = (req, res) => {
     });
 };
 
-module.exports = {
-    signup
+const refresh = async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            return res.status(401).json({ message: "Refresh token required" });
+        }
+
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        const sql = "SELECT id, email FROM users WHERE id = ?";
+        db.query(sql, [decoded.id], (err, rows) => {
+            if (err) return res.status(500).json({ message: "DB error" });
+            if (!rows?.length) {
+                return res.status(401).json({ message: "User not found" });
+            }
+            const accessToken = generateAccessToken(rows[0]);
+            return res.status(200).json({ accessToken });
+        });
+    } catch {
+        return res.status(401).json({ message: "Invalid refresh token" });
+    }
 };
 
 module.exports = {
     signup,
-    login
+    login,
+    refresh,
+    getProfile,
 };
