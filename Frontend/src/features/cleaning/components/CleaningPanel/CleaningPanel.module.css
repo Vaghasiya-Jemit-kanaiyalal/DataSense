@@ -44,14 +44,14 @@
   margin-bottom: 14px;
 }
 
-.statCard,
 .panel {
   border: 1px solid rgba(148, 163, 184, 0.14);
   border-radius: 6px;
   background: #0b1220;
 }
 
-.statCard {
+/* ── Compact stat boxes ── */
+.infographicCard {
   display: flex;
   align-items: center;
   gap: 12px;
