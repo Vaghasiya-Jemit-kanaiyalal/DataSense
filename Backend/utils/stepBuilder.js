@@ -52,6 +52,15 @@ function buildStep(body, stepIndex) {
     };
   }
 
+  if (action === 'encoding') {
+    const cols = columns || [];
+    return {
+      step_index: stepIndex,
+      type: 'encoding',
+      params: cols.map((column) => ({ column, strategy: strategy || 'label' })),
+    };
+  }
+
   throw new Error(`Unsupported cleaning action: ${action}`);
 }
 
