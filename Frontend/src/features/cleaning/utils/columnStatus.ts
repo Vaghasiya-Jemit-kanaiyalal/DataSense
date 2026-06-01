@@ -30,7 +30,10 @@ export function getColumnStatus(
     issues.push({ type: 'outliers', count: outliers, label: 'Outliers' });
   }
 
-  return { clean: issues.length === 0, issues };
+  return {
+    clean: issues.length === 0,
+    issues,
+  };
 }
 
 export function totalCellCount(rows: number, columns: number) {
