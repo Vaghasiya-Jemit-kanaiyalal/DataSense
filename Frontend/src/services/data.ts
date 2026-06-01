@@ -87,7 +87,6 @@ export function getActiveDatasetId(): number | null {
   return v ? Number(v) : null;
 }
 
-/** Load active dataset from server (resume after logout/login). */
 export async function resumeActiveDataset(): Promise<DatasetPayload | null> {
   try {
     const data = await getActiveDataset();

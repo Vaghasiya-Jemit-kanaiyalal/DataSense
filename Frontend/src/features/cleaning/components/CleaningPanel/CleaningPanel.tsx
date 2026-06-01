@@ -1,7 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
+import dataProcessingImg from '@/assets/data-processing.png';
 import styles from './CleaningPanel.module.css';
 import { useAuthHydrated } from '@/hooks';
 import {
@@ -194,6 +196,56 @@ export default function CleaningPanel() {
 
         {payload && (
           <>
+            <header className={styles.pageHeader}>
+              <Image
+                src={dataProcessingImg}
+                alt=""
+                width={112}
+                height={112}
+                className={styles.headerArt}
+                priority
+              />
+              <div className={styles.headerMain}>
+                <div className={styles.headerTitles}>
+                  <span className={styles.headerKicker}>DataSense · Pipeline</span>
+                  <h1 className={styles.headerTitle}>Data Cleaning Studio</h1>
+                  <p className={styles.headerMeta}>
+                    Inspect, transform, and prepare your dataset
+                    {datasetId ? ` · Dataset #${datasetId}` : ''}
+                    {loading ? ' · processing…' : ''}
+                  </p>
+                </div>
+                <div className={styles.stepsSection}>
+                  <div className={styles.stepsLabelRow}>
+                    <span className={styles.stepsLabel}>Cleaning steps</span>
+                    <span className={styles.stepCountBadge}>{stepHistory.length} applied</span>
+                  </div>
+                  <div className={styles.stepsTrack} aria-label="Cleaning step pipeline">
+                    {stepHistory.length === 0 ? (
+                      <p className={styles.stepsEmpty}>
+                        No steps yet — run a cleaning action to build your pipeline
+                      </p>
+                    ) : (
+                      stepHistory.map((step, i) => (
+                        <Fragment key={step.step_index}>
+                          <div className={`${styles.stepPill} ${styles[`stepTone_${CHAIN_COLORS[i % 3]}`]}`}>
+                            <span className={styles.stepNum}>{i + 1}</span>
+                            <div className={styles.stepText}>
+                              <strong>{step.label}</strong>
+                              <small>{step.detail}</small>
+                            </div>
+                          </div>
+                          {i < stepHistory.length - 1 && (
+                            <span className={styles.stepConnector} aria-hidden="true" />
+                          )}
+                        </Fragment>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </header>
+
             <section className={styles.statsGrid}>
               {stats.map((stat) => (
                 <article key={stat.label} className={`${styles.statCard} ${styles[stat.tone]}`}>

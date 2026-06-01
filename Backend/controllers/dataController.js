@@ -305,6 +305,7 @@ const finalizeDataset = async (req, res) => {
     const datasetId = Number(req.params.datasetId);
     const meta = await datasetService.getDataset(req.user.id, datasetId);
     if (!meta) return res.status(404).json({ message: 'Dataset not found' });
+
     if (datasetService.isFinalized(meta)) {
       const pipeline = await datasetService.getPipelineByDataset(datasetId);
       const steps = pipeline ? await datasetService.getSteps(pipeline.id) : [];
