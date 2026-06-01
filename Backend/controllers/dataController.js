@@ -85,13 +85,16 @@ async function buildResumeMeta(userId, active) {
 }
 
 async function runPipeline(userId, datasetId, steps, previewRows = 20, offset = 0) {
-  const meta = await datasetService.getDataset(userId, datasetId);
-  if (!meta) {
+  const datasetMeta = await datasetService.getDataset(userId, datasetId);
+
+  if (!datasetMeta) {
     const e = new Error('Dataset not found');
     e.status = 404;
     throw e;
   }
-  await ensureMlLoaded(userId, datasetId, meta);
+
+  await ensureMlLoaded(userId, datasetId, datasetMeta);
+
   const ml = await mlService.preprocessDataset({
     userId,
     datasetId,
@@ -99,8 +102,10 @@ async function runPipeline(userId, datasetId, steps, previewRows = 20, offset = 
     previewRows,
     offset,
   });
-  const meta = await datasetService.getDataset(userId, datasetId);
-  return attachPipelineMeta(datasetService, datasetId, ml, meta);
+
+  const updatedMeta = await datasetService.getDataset(userId, datasetId);
+
+  return attachPipelineMeta(datasetService, datasetId, ml, updatedMeta);
 }
 
 const uploadFile = [uploadMiddleware, async (req, res) => {
