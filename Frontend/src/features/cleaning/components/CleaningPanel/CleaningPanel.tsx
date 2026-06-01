@@ -6,6 +6,7 @@ import styles from './CleaningPanel.module.css';
 import { useAuthHydrated } from '@/hooks';
 import {
   cleanDataset,
+  finalizeDataset,
   getActiveDatasetId,
   getPreview,
   resumeActiveDataset,
@@ -14,6 +15,9 @@ import {
   type DatasetPayload,
   type PipelineStepInfo,
 } from '@/services/data';
+import { CleaningPreviewModal } from '../CleaningPreviewModal';
+import { getColumnStatus, totalCellCount } from '../../utils/columnStatus';
+import { downloadDatasetCsv } from '../../utils/downloadCsv';
 
 const CHAIN_COLORS = ['orange', 'blue', 'green'] as const;
 const PAGE_SIZE = 20;
@@ -26,6 +30,11 @@ function sumOutliers(stats: DatasetPayload['statistics']) {
   return Object.values(stats).reduce((a, s) => a + (s.outliers || 0), 0);
 }
 
+function isBooleanLike(name: string, statistics: DatasetPayload['statistics']) {
+  const u = statistics[name]?.unique_count ?? 0;
+  return u > 0 && u <= 2;
+}
+
 export default function CleaningPanel() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -35,6 +44,7 @@ export default function CleaningPanel() {
   const [error, setError] = useState<string | null>(null);
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
   const [resolvedId, setResolvedId] = useState<number | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const hydrated = useAuthHydrated();
 
   const queryId = searchParams.get('datasetId');
@@ -44,12 +54,20 @@ export default function CleaningPanel() {
     return resolvedId ?? getActiveDatasetId();
   }, [queryId, resolvedId]);
 
+  const isLocked = Boolean(payload?.finalized || payload?.pipeline_locked);
+
   const applyPayload = (data: DatasetPayload) => {
     setPayload(data);
     setStepHistory(data.pipeline_steps ?? []);
     setActiveDatasetId(data.dataset_id);
     setResolvedId(data.dataset_id);
   };
+
+  useEffect(() => {
+    if (payload?.finalized && datasetId) {
+      router.replace(`/visualization?datasetId=${datasetId}`);
+    }
+  }, [payload?.finalized, datasetId, router]);
 
   const load = useCallback(async (id: number) => {
     setLoading(true);
@@ -66,7 +84,6 @@ export default function CleaningPanel() {
 
   useEffect(() => {
     if (!hydrated) return;
-
     async function init() {
       if (queryId) {
         await load(Number(queryId));
@@ -84,8 +101,25 @@ export default function CleaningPanel() {
     init();
   }, [queryId, load, router, hydrated]);
 
+  const handleFinalize = async () => {
+    if (!datasetId || isLocked) return;
+    if (!window.confirm('Finalize this dataset? The cleaning pipeline will be locked and you will continue to Visualization.')) {
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await finalizeDataset(datasetId);
+      router.replace(`/visualization?datasetId=${datasetId}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Finalize failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const runClean = async (body: Omit<Parameters<typeof cleanDataset>[0], 'dataset_id'>) => {
-    if (!datasetId) return;
+    if (!datasetId || isLocked) return;
     setLoading(true);
     setError(null);
     try {
@@ -99,7 +133,7 @@ export default function CleaningPanel() {
   };
 
   const handleUndo = async () => {
-    if (!datasetId || stepHistory.length === 0) return;
+    if (!datasetId || stepHistory.length === 0 || isLocked) return;
     setLoading(true);
     setError(null);
     try {
@@ -114,12 +148,12 @@ export default function CleaningPanel() {
 
   const stats = payload
     ? [
-        { label: 'Total Rows', value: payload.rows.toLocaleString(), tone: 'blue' },
-        { label: 'Total Columns', value: String(payload.columns), tone: 'purple' },
-        { label: 'Missing Values', value: String(sumMissing(payload.statistics)), tone: 'amber' },
-        { label: 'Outliers', value: String(sumOutliers(payload.statistics)), tone: 'red' },
-        { label: 'Numeric Columns', value: String(payload.numerical_columns.length), tone: 'teal' },
-        { label: 'Categorical Columns', value: String(payload.categorical_columns.length), tone: 'green' },
+        { label: 'Columns', value: String(payload.columns), tone: 'purple', icon: 'columns' },
+        { label: 'Total Values', value: totalCellCount(payload.rows, payload.columns).toLocaleString(), tone: 'blue', icon: 'values' },
+        { label: 'Missing Values', value: String(sumMissing(payload.statistics)), tone: 'amber', icon: 'missing' },
+        { label: 'Outliers', value: String(sumOutliers(payload.statistics)), tone: 'red', icon: 'outliers' },
+        { label: 'Numeric', value: String(payload.numerical_columns.length), tone: 'blue', icon: 'numeric' },
+        { label: 'Categorical', value: String(payload.categorical_columns.length), tone: 'green', icon: 'categorical' },
       ]
     : [];
 
@@ -127,12 +161,16 @@ export default function CleaningPanel() {
     ? [...payload.numerical_columns, ...payload.categorical_columns]
     : [];
 
+  const selectedIsCategorical = selectedColumn && payload
+    ? payload.categorical_columns.includes(selectedColumn)
+    : false;
+
   if (!datasetId && !loading) {
     return (
       <div className={styles.page}>
         <div className={styles.container}>
           <p>Upload a dataset first, then return here to resume cleaning.</p>
-          <button type="button" className={styles.finalizeButton} onClick={() => router.push('/upload')}>
+          <button type="button" className={styles.finalizeBtn} onClick={() => router.push('/upload')}>
             Go to Upload
           </button>
         </div>
@@ -144,14 +182,12 @@ export default function CleaningPanel() {
     <div className={styles.page}>
       <div className={styles.container}>
         <section className={styles.hero}>
-          <div>
-            <h1>Data Cleaning</h1>
-            <p>
-              Inspect, clean, and prepare your dataset.
-              {datasetId ? ` Dataset #${datasetId}` : ''}
-              {loading ? ' · processing…' : ''}
-            </p>
-          </div>
+          <h1>Data Cleaning</h1>
+          <p>
+            Inspect, clean, and prepare your dataset.
+            {datasetId ? ` · Dataset #${datasetId}` : ''}
+            {loading ? ' · processing…' : ''}
+          </p>
         </section>
 
         {error && <p className={styles.errorBanner} role="alert">{error}</p>}
@@ -161,36 +197,85 @@ export default function CleaningPanel() {
             <section className={styles.statsGrid}>
               {stats.map((stat) => (
                 <article key={stat.label} className={`${styles.statCard} ${styles[stat.tone]}`}>
-                  <div><p>{stat.label}</p><strong>{stat.value}</strong></div>
+                  <span className={`${styles.statIcon} ${styles[`icon_${stat.icon}`]}`} aria-hidden="true" />
+                  <div>
+                    <p>{stat.label}</p>
+                    <strong>{stat.value}</strong>
+                  </div>
                 </article>
               ))}
             </section>
 
             <section className={styles.mainGrid}>
               <article className={styles.panel}>
-                <h2>Columns Overview</h2>
-                <div className={styles.list}>
+                <h2>Columns</h2>
+                <div className={styles.columnList}>
                   {allColumns.map((name) => {
-                    const colStats = payload.statistics[name];
                     const isNum = payload.numerical_columns.includes(name);
-                    const missing = colStats?.missing_count ?? 0;
+                    const isBool = !isNum && isBooleanLike(name, payload.statistics);
+                    const status = getColumnStatus(name, payload.statistics, isNum);
+                    const selected = selectedColumn === name;
                     return (
                       <button
-                        className={`${styles.rowButton} ${selectedColumn === name ? styles.rowSelected : ''}`}
-                        type="button"
                         key={name}
+                        type="button"
+                        className={[
+                          styles.colCard,
+                          status.clean ? styles.colClean : '',
+                          selected ? styles.colSelected : '',
+                        ].filter(Boolean).join(' ')}
                         onClick={() => setSelectedColumn(name)}
                       >
-                        <span className={styles.rowText}>
+                        <div className={styles.colMain}>
                           <strong>{name}</strong>
-                          <small className={isNum ? styles.blue : styles.green}>
-                            {isNum ? 'Numeric' : 'Categorical'}
-                          </small>
-                        </span>
-                        <span className={missing > 0 ? styles.alertText : styles.mutedText}>
-                          {missing} missing
-                          {isNum && colStats?.outliers ? ` · ${colStats.outliers} outliers` : ''}
-                        </span>
+                          <span className={isNum ? styles.typeNumeric : styles.typeCategorical}>
+                            {isNum ? '# numeric' : isBool ? 'Aa boolean' : 'Aa categorical'}
+                          </span>
+                        </div>
+                        <div className={styles.colActions}>
+                          {status.issues.map((issue) => (
+                            <span
+                              key={issue.type}
+                              className={`${styles.issueBadge} ${issue.type === 'missing' ? styles.issueMissing : styles.issueOutliers}`}
+                              title={`${issue.label}: ${issue.count}`}
+                            >
+                              <span className={styles.issueType}>{issue.label}</span>
+                              <span className={styles.issueCount}>{issue.count}</span>
+                            </span>
+                          ))}
+                          {status.clean && (
+                            <span className={styles.cleanBadge} title="Column is clean">
+                              <CheckIcon />
+                              Cleaned
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            className={styles.colToolBtn}
+                            title="Preview cleaned data"
+                            aria-label={`Preview dataset including ${name}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowPreview(true);
+                            }}
+                          >
+                            <PreviewIcon />
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.colToolBtn} ${styles.colToolDanger}`}
+                            title={`Drop column ${name}`}
+                            aria-label={`Drop column ${name}`}
+                            disabled={loading || isLocked}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!window.confirm(`Drop column "${name}"?`)) return;
+                              runClean({ action: 'drop_column', columns: [name] });
+                            }}
+                          >
+                            <TrashIcon />
+                          </button>
+                        </div>
                       </button>
                     );
                   })}
@@ -199,47 +284,21 @@ export default function CleaningPanel() {
 
               <article className={styles.panel}>
                 <h2>Cleaning Actions</h2>
-                <div className={styles.list}>
-                  <button
-                    className={styles.rowButton}
-                    type="button"
-                    disabled={loading}
+                <div className={styles.actionList}>
+                  <ActionBtn
+                    tone="blue"
+                    icon="dup"
+                    title="Drop Duplicates"
+                    hint="Remove duplicate rows"
+                    disabled={loading || isLocked}
                     onClick={() => runClean({ action: 'drop_duplicates', strategy: 'auto' })}
-                  >
-                    <span className={styles.rowText}><strong>Drop Duplicates</strong></span>
-                  </button>
-                  <button
-                    className={styles.rowButton}
-                    type="button"
-                    disabled={loading || !selectedColumn}
-                    onClick={() =>
-                      selectedColumn &&
-                      runClean({ action: 'missing_values', strategy: 'mean', columns: [selectedColumn] })
-                    }
-                  >
-                    <span className={styles.rowText}>
-                      <strong>Handle Missing Values</strong>
-                      <small>{selectedColumn ? `Mean · ${selectedColumn}` : 'Select a column'}</small>
-                    </span>
-                  </button>
-                  <button
-                    className={styles.rowButton}
-                    type="button"
-                    disabled={loading || !selectedColumn}
-                    onClick={() =>
-                      selectedColumn &&
-                      runClean({ action: 'outliers', strategy: 'cap', columns: [selectedColumn] })
-                    }
-                  >
-                    <span className={styles.rowText}>
-                      <strong>Handle Outliers</strong>
-                      <small>{selectedColumn || 'Select a column'}</small>
-                    </span>
-                  </button>
-                  <button
-                    className={styles.rowButton}
-                    type="button"
-                    disabled={loading || !selectedColumn}
+                  />
+                  <ActionBtn
+                    tone="green"
+                    icon="replace"
+                    title="Replace Values"
+                    hint={selectedColumn ? `Column: ${selectedColumn}` : 'Select a column'}
+                    disabled={loading || isLocked || !selectedColumn}
                     onClick={() => {
                       if (!selectedColumn) return;
                       const oldVal = window.prompt('Value to replace:');
@@ -252,17 +311,97 @@ export default function CleaningPanel() {
                         new_value: newVal,
                       });
                     }}
-                  >
-                    <span className={styles.rowText}><strong>Replace Values</strong></span>
-                  </button>
+                  />
+                  <ActionBtn
+                    tone="amber"
+                    icon="missing"
+                    title="Handle Missing Values"
+                    hint={selectedColumn ? `Mean · ${selectedColumn}` : 'Select a column'}
+                    disabled={loading || isLocked || !selectedColumn}
+                    onClick={() =>
+                      selectedColumn &&
+                      runClean({ action: 'missing_values', strategy: 'mean', columns: [selectedColumn] })
+                    }
+                  />
+                  <ActionBtn
+                    tone="purple"
+                    icon="imbalance"
+                    title="Handle Imbalance"
+                    hint="Coming soon"
+                    disabled
+                    onClick={() => undefined}
+                  />
+                  <ActionBtn
+                    tone="red"
+                    icon="outliers"
+                    title="Handle Outliers"
+                    hint={selectedColumn ? `Cap · ${selectedColumn}` : 'Select a column'}
+                    disabled={loading || isLocked || !selectedColumn || !payload.numerical_columns.includes(selectedColumn ?? '')}
+                    onClick={() =>
+                      selectedColumn &&
+                      runClean({ action: 'outliers', strategy: 'cap', columns: [selectedColumn] })
+                    }
+                  />
+                  <ActionBtn
+                    tone="green"
+                    icon="encoding"
+                    title="Encoding"
+                    hint={selectedIsCategorical ? `Label · ${selectedColumn}` : 'Select categorical column'}
+                    disabled={loading || isLocked || !selectedIsCategorical}
+                    onClick={() =>
+                      selectedColumn &&
+                      runClean({ action: 'encoding', strategy: 'label', columns: [selectedColumn] })
+                    }
+                  />
+                  <ActionBtn
+                    tone="blue"
+                    icon="scale"
+                    title="Feature Scaling"
+                    hint="Coming soon"
+                    disabled
+                    onClick={() => undefined}
+                  />
                 </div>
               </article>
 
               <div className={styles.sideStack}>
                 <article className={styles.panel}>
+                  <h2>Utility Actions</h2>
+                  <div className={styles.utilityList}>
+                    <div className={styles.utilityBlock}>
+                      <span className={`${styles.utilIcon} ${styles.utilDrop}`} aria-hidden="true" />
+                      <div>
+                        <strong>Drop Column</strong>
+                        <button
+                          type="button"
+                          className={styles.dropColBtn}
+                          disabled={loading || isLocked || !selectedColumn}
+                          onClick={() => {
+                            if (!selectedColumn) return;
+                            if (!window.confirm(`Drop column "${selectedColumn}"?`)) return;
+                            runClean({ action: 'drop_column', columns: [selectedColumn] });
+                          }}
+                        >
+                          Drop {selectedColumn || 'column'}
+                        </button>
+                      </div>
+                    </div>
+                    <div className={styles.utilityBlock}>
+                      <span className={`${styles.utilIcon} ${styles.utilPreview}`} aria-hidden="true" />
+                      <div>
+                        <strong>Preview Data</strong>
+                        <button type="button" className={styles.utilBtn} onClick={() => setShowPreview(true)}>
+                          Preview
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+
+                <article className={styles.panel}>
                   <div className={styles.controlHeader}>
                     <h2>Dataset Controls</h2>
-                    <span>{stepHistory.length} Steps</span>
+                    <span className={styles.stepBadge}>{stepHistory.length} steps</span>
                   </div>
                   <div className={styles.controls}>
                     <div className={styles.controlRail} aria-label="Cleaning step chain">
@@ -280,7 +419,7 @@ export default function CleaningPanel() {
                     <div className={styles.controlRight}>
                       <div className={styles.chainLabels}>
                         {stepHistory.length === 0 ? (
-                          <p className={styles.chainHint}>Steps appear here as you clean (undo removes the last step only).</p>
+                          <p className={styles.chainHint}>Steps appear here as you clean.</p>
                         ) : (
                           stepHistory.map((step) => (
                             <div key={step.step_index} className={styles.chainLabelRow}>
@@ -291,37 +430,117 @@ export default function CleaningPanel() {
                         )}
                       </div>
                       <div className={styles.controlButtons}>
-                      <button
-                        className={styles.undoButton}
-                        type="button"
-                        disabled={loading || stepHistory.length === 0}
-                        onClick={handleUndo}
-                      >
-                        Undo Last Step
-                      </button>
-                      <button
-                        className={styles.downloadButton}
-                        type="button"
-                        onClick={() => router.push(`/preview?datasetId=${datasetId}`)}
-                      >
-                        Preview Data
-                      </button>
-                      <button
-                        className={styles.finalizeButton}
-                        type="button"
-                        onClick={() => router.push(`/preview?datasetId=${datasetId}`)}
-                      >
-                        Finalize Dataset
-                      </button>
+                        <button
+                          type="button"
+                          className={styles.undoBtn}
+                          disabled={loading || isLocked || stepHistory.length === 0}
+                          onClick={handleUndo}
+                        >
+                          Undo Last Step
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.downloadBtn}
+                          disabled={!payload.data?.length}
+                          onClick={() =>
+                            downloadDatasetCsv(
+                              payload.data,
+                              `dataset_${datasetId}_cleaned.csv`,
+                            )
+                          }
+                        >
+                          Download CSV
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.finalizeBtn}
+                          disabled={loading || isLocked}
+                          onClick={handleFinalize}
+                        >
+                          Finalize Dataset
+                        </button>
                       </div>
                     </div>
                   </div>
                 </article>
               </div>
             </section>
+
+            <button
+              className={styles.visualizeButton}
+              type="button"
+              onClick={() => router.push(`/visualization?datasetId=${datasetId}`)}
+            >
+              Let&apos;s Visualize It
+            </button>
           </>
         )}
       </div>
+
+      {showPreview && payload && !isLocked && (
+        <CleaningPreviewModal
+          payload={payload}
+          onClose={() => setShowPreview(false)}
+          onFinalize={handleFinalize}
+          finalizing={loading}
+        />
+      )}
     </div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M3 8.5 6.5 12 13 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PreviewIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M2 8s2.5-4.5 6-4.5 6 4.5 6 4.5-2.5 4.5-6 4.5S2 8 2 8z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M3 5h10M6 5V3.5h4V5M5.5 5l.6 8h4.8l.6-8" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ActionBtn({
+  tone,
+  icon,
+  title,
+  hint,
+  disabled,
+  onClick,
+}: {
+  tone: string;
+  icon: string;
+  title: string;
+  hint: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`${styles.actionBtn} ${styles[`action_${tone}`]}`}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <span className={`${styles.actionIcon} ${styles[`actionIcon_${icon}`]}`} aria-hidden="true" />
+      <span className={styles.actionText}>
+        <strong>{title}</strong>
+        <small>{hint}</small>
+      </span>
+    </button>
   );
 }

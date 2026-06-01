@@ -17,6 +17,7 @@ export interface DatasetPayload {
   statistics: Record<string, {
     missing_count: number;
     missing_percentage: number;
+    unique_count?: number;
     outliers?: number;
     mean?: number;
     min?: number;
@@ -31,6 +32,9 @@ export interface DatasetPayload {
   original_filename?: string;
   ml_ready?: boolean;
   message?: string;
+  status?: string;
+  finalized?: boolean;
+  pipeline_locked?: boolean;
 }
 
 export interface CleanRequest {
@@ -65,6 +69,10 @@ export function cleanDataset(body: CleanRequest) {
 
 export function undoStep(datasetId: number, page = 1, rows = 20) {
   return api.post<DatasetPayload>(`/data/${datasetId}/undo?page=${page}&rows=${rows}`);
+}
+
+export function finalizeDataset(datasetId: number) {
+  return api.post<DatasetPayload>(`/data/${datasetId}/finalize`);
 }
 
 export function setActiveDatasetId(id: number) {

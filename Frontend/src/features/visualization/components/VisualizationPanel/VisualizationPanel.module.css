@@ -1,0 +1,300 @@
+.page {
+  min-height: calc(100vh - 68px);
+  font-family: var(--font-sans);
+  background:
+    radial-gradient(circle at 18% 10%, rgba(37, 99, 235, 0.12), transparent 24%),
+    radial-gradient(circle at 72% 2%, rgba(124, 58, 237, 0.18), transparent 20%),
+    linear-gradient(180deg, #030913 0%, #06101a 52%, #030b13 100%);
+  padding: 28px 24px 0;
+}
+
+.container {
+  width: min(100%, 1232px);
+  margin: 0 auto;
+}
+
+.errorBanner {
+  color: #f87171;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.muted {
+  color: #94a3b8;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.sidebar {
+  display: grid;
+  gap: 16px;
+}
+
+.columnBlock {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 8px;
+  background: rgba(8, 17, 29, 0.78);
+  padding: 18px 16px;
+}
+
+.columnBlock h3 {
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.selectWrap select {
+  width: 100%;
+  height: 42px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.9);
+  color: #e2e8f0;
+  padding: 0 12px;
+  font-size: 0.86rem;
+  margin-bottom: 14px;
+}
+
+.typeRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.typeBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  font-size: 0.78rem;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+}
+
+.typeBadge svg {
+  width: 14px;
+  height: 14px;
+}
+
+.typeActive {
+  border-color: rgba(124, 58, 237, 0.65);
+  background: rgba(124, 58, 237, 0.18);
+  color: #c4b5fd;
+}
+
+.typeInactive {
+  background: rgba(15, 23, 42, 0.45);
+  color: #64748b;
+  opacity: 0.65;
+}
+
+.typeHint {
+  margin-top: 10px;
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+.typeHint strong {
+  color: #c4b5fd;
+  font-weight: 650;
+}
+
+.main {
+  display: grid;
+  gap: 18px;
+}
+
+.chartPicker {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 8px;
+  background: rgba(8, 17, 29, 0.78);
+  padding: 22px 20px 20px;
+}
+
+.chartPicker header h1 {
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 740;
+  margin-bottom: 6px;
+}
+
+.chartPicker header p {
+  color: #94a3b8;
+  font-size: 0.84rem;
+  margin-bottom: 18px;
+}
+
+.chartGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.chartCard {
+  position: relative;
+  text-align: left;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 10px;
+  background: linear-gradient(160deg, rgba(14, 24, 40, 0.95), rgba(8, 14, 26, 0.88));
+  padding: 16px 14px 12px;
+  min-height: 168px;
+  color: #e2e8f0;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.chartCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: radial-gradient(circle at 80% 0%, rgba(124, 58, 237, 0.12), transparent 55%);
+  pointer-events: none;
+}
+
+.chartCard:hover {
+  border-color: rgba(124, 58, 237, 0.4);
+}
+
+.chartCardActive {
+  border-color: #7c3aed !important;
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.35), 0 12px 28px rgba(59, 40, 232, 0.12);
+}
+
+.checkmark {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #7c3aed;
+  color: #fff;
+  font-size: 0.72rem;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.chartCard strong {
+  display: block;
+  font-size: 0.92rem;
+  margin-bottom: 4px;
+}
+
+.chartCard small {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  max-width: 200px;
+}
+
+.output {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 8px;
+  background: rgba(8, 17, 29, 0.78);
+  min-height: 360px;
+}
+
+.outputHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.outputHeader h2 {
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.generateBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(124, 58, 237, 0.45);
+  background: rgba(124, 58, 237, 0.15);
+  color: #c4b5fd;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.generateBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.generateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.outputBody {
+  padding: 24px 20px 32px;
+  min-height: 300px;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  width: 100%;
+}
+
+.outputBody > * {
+  width: 100%;
+}
+
+.placeholder {
+  text-align: center;
+  max-width: 420px;
+}
+
+.placeholderIcon {
+  width: 120px;
+  height: 88px;
+  margin: 0 auto 20px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 88'%3E%3Crect x='20' y='12' width='80' height='56' rx='4' fill='none' stroke='%23475569' stroke-width='2'/%3E%3Cpolyline points='32,52 48,38 60,44 72,28 88,40' fill='none' stroke='%237c3aed' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: 0.9;
+}
+
+.placeholder strong {
+  display: block;
+  color: #e2e8f0;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.placeholder p {
+  color: #94a3b8;
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 1020px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .chartGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .chartGrid {
+    grid-template-columns: 1fr;
+  }
+}
