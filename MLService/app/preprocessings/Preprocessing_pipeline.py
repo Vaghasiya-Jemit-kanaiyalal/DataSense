@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from app.preprocessings import drop_column, drop_duplicates, missing_values, outliers, replace_values
+from app.preprocessings import drop_column, drop_duplicates, encoding, missing_values, outliers, replace_values
 
 _HANDLERS = {
     "drop_duplicates": drop_duplicates.apply,
@@ -10,6 +10,7 @@ _HANDLERS = {
     "outliers": outliers.apply,
     "replace_values": replace_values.apply,
     "drop_column": drop_column.apply,
+    "encoding": encoding.apply,
 }
 
 

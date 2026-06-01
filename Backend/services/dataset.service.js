@@ -172,7 +172,22 @@ function normalizeDataset(row) {
     total_columns: row.total_columns ?? row.columns_count ?? null,
     storage_path: row.storage_path || row.path || null,
     is_active: row.is_active === 1 || row.is_active === true,
+    status: row.status || 'uploaded',
   };
+}
+
+function isFinalized(meta) {
+  return meta?.status === 'finalized';
+}
+
+async function finalizeDatasetRecord(datasetId) {
+  if (await hasColumn('datasets', 'status')) {
+    await query(`UPDATE datasets SET status = 'finalized' WHERE id = ?`, [datasetId]);
+  }
+  const pipeline = await getPipelineByDataset(datasetId);
+  if (pipeline && (await hasColumn('pipelines', 'status'))) {
+    await query(`UPDATE pipelines SET status = 'finalized' WHERE id = ?`, [pipeline.id]);
+  }
 }
 
 async function getDataset(userId, datasetId) {
@@ -302,4 +317,6 @@ module.exports = {
   getSteps,
   saveStep,
   deleteLastStep,
+  finalizeDatasetRecord,
+  isFinalized,
 };

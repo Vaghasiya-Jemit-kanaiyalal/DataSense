@@ -4,6 +4,7 @@ const STEP_LABELS = {
   outliers: 'Cap Outliers',
   replace_values: 'Replace Values',
   drop_column: 'Drop Column',
+  encoding: 'Encoding',
 };
 
 function formatStepHistory(steps) {
@@ -23,14 +24,19 @@ function formatStepHistory(steps) {
   });
 }
 
-async function attachPipelineMeta(datasetService, datasetId, mlPayload) {
+async function attachPipelineMeta(datasetService, datasetId, mlPayload, meta = null) {
   const pipeline = await datasetService.getPipelineByDataset(datasetId);
   const steps = pipeline ? await datasetService.getSteps(pipeline.id) : [];
+  const status = meta?.status || 'uploaded';
+  const finalized = status === 'finalized' || pipeline?.status === 'finalized';
   return {
     ...mlPayload,
     dataset_id: mlPayload.dataset_id ?? datasetId,
     total_steps: steps.length,
     pipeline_steps: formatStepHistory(steps),
+    status,
+    finalized,
+    pipeline_locked: finalized,
   };
 }
 
