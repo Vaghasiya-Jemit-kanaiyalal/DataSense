@@ -99,7 +99,8 @@ async function runPipeline(userId, datasetId, steps, previewRows = 20, offset = 
     previewRows,
     offset,
   });
-  return attachPipelineMeta(datasetService, datasetId, ml);
+  const meta = await datasetService.getDataset(userId, datasetId);
+  return attachPipelineMeta(datasetService, datasetId, ml, meta);
 }
 
 const uploadFile = [uploadMiddleware, async (req, res) => {
@@ -237,6 +238,9 @@ const cleanDataset = async (req, res) => {
 
     const meta = await datasetService.getDataset(req.user.id, datasetId);
     if (!meta) return res.status(404).json({ message: 'Dataset not found' });
+    if (datasetService.isFinalized(meta)) {
+      return res.status(403).json({ message: 'Dataset is finalized; cleaning is locked.' });
+    }
 
     const pipeline = await datasetService.getPipelineByDataset(datasetId);
     if (!pipeline) return res.status(404).json({ message: 'Pipeline not found' });
@@ -253,6 +257,8 @@ const cleanDataset = async (req, res) => {
 
     return res.status(200).json({
       ...ml,
+      total_steps: allSteps.length,
+      pipeline_steps: formatStepHistory(allSteps),
       step_index: newStep.step_index,
     });
   } catch (error) {
@@ -269,6 +275,9 @@ const undoStep = async (req, res) => {
     const datasetId = Number(req.params.datasetId);
     const meta = await datasetService.getDataset(req.user.id, datasetId);
     if (!meta) return res.status(404).json({ message: 'Dataset not found' });
+    if (datasetService.isFinalized(meta)) {
+      return res.status(403).json({ message: 'Dataset is finalized; undo is locked.' });
+    }
 
     const pipeline = await datasetService.getPipelineByDataset(datasetId);
     if (!pipeline) return res.status(404).json({ message: 'Pipeline not found' });
@@ -290,6 +299,38 @@ const undoStep = async (req, res) => {
   }
 };
 
+const finalizeDataset = async (req, res) => {
+  try {
+    await init();
+    const datasetId = Number(req.params.datasetId);
+    const meta = await datasetService.getDataset(req.user.id, datasetId);
+    if (!meta) return res.status(404).json({ message: 'Dataset not found' });
+    if (datasetService.isFinalized(meta)) {
+      const pipeline = await datasetService.getPipelineByDataset(datasetId);
+      const steps = pipeline ? await datasetService.getSteps(pipeline.id) : [];
+      const ml = await runPipeline(req.user.id, datasetId, steps, 20, 0);
+      return res.status(200).json({ ...ml, already_finalized: true });
+    }
+
+    await datasetService.finalizeDatasetRecord(datasetId);
+    const pipeline = await datasetService.getPipelineByDataset(datasetId);
+    const steps = pipeline ? await datasetService.getSteps(pipeline.id) : [];
+    const ml = await runPipeline(req.user.id, datasetId, steps, 20, 0);
+    const updatedMeta = await datasetService.getDataset(req.user.id, datasetId);
+    return res.status(200).json({
+      ...ml,
+      status: updatedMeta?.status || 'finalized',
+      finalized: true,
+      pipeline_locked: true,
+    });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      message: 'Finalize failed',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   uploadFile,
   listUserFiles,
@@ -298,4 +339,5 @@ module.exports = {
   getActive,
   cleanDataset,
   undoStep,
+  finalizeDataset,
 };
