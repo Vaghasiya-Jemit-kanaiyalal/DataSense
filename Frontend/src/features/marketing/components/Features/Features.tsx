@@ -146,28 +146,24 @@ export default function Features() {
       <div className={styles.container}>
         {/* ── Header ── */}
         <div className={styles.header}>
-          <span className={styles.label}>Features That Empower</span>
+          <span className={styles.eyebrow}>Features</span>
           <h2 className={styles.title}>
-            Built For Data{' '}
-            <span className={styles.titleAccent}>Intelligence</span>
+            Everything you need in
+            <span className={styles.titleAccent}> one workspace</span>
           </h2>
           <p className={styles.subtitle}>
-            Everything you need — from data cleaning to model insights — all in
-            one powerful workspace.
+            From upload to cleaning, charts, and exports — a focused toolkit for
+            modern data workflows.
           </p>
         </div>
 
-        {/* ── Grid ── */}
         <div className={styles.grid}>
           {features.map((feature) => (
-            <div key={feature.title} className={styles.card}>
+            <article key={feature.title} className={styles.card}>
               <div className={styles.iconWrap}>{feature.icon}</div>
               <h3 className={styles.cardTitle}>{feature.title}</h3>
               <p className={styles.cardDesc}>{feature.description}</p>
-              <a href="#" className={styles.learnMore}>
-                Learn More →
-              </a>
-            </div>
+            </article>
           ))}
         </div>
       </div>

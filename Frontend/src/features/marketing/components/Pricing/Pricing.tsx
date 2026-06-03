@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import styles from './Pricing.module.css';
 
@@ -75,9 +76,10 @@ export default function Pricing() {
     <section className={styles.section} id="pricing">
       {/* Header */}
       <div className={styles.header}>
-        <span className={styles.label}>Simple &amp; Transparent</span>
+        <span className={styles.eyebrow}>Pricing</span>
         <h2 className={styles.title}>
-          Plans and <span className={styles.titleAccent}>Pricing</span>
+          Simple plans for
+          <span className={styles.titleAccent}> every stage</span>
         </h2>
         <p className={styles.subtitle}>
           Start free and scale as you grow. Cancel anytime.
@@ -144,13 +146,14 @@ export default function Pricing() {
               ))}
             </ul>
 
-            <button
+            <Link
+              href={plan.name === 'Enterprise' ? '#about' : '/upload'}
               className={`${styles.ctaButton} ${
                 plan.featured ? styles.ctaFilled : styles.ctaOutlined
               }`}
             >
               {plan.cta}
-            </button>
+            </Link>
           </div>
         ))}
       </div>
