@@ -13,10 +13,8 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Features', href: '#features' },
-  { label: 'How It Works', href: '#how-it-works' },
   { label: 'Pricing', href: '#pricing' },
-  { label: 'Resources', href: '#resources' },
-  { label: 'Company', href: '#company', hasDropdown: true },
+  { label: 'About', href: '#about' },
 ];
 
 /** Inline SVG logo — purple gradient circle with a small pulse/chart line. */

@@ -152,7 +152,7 @@ export default function CleaningPanel() {
     ? [
         { label: 'Columns', value: String(payload.columns), tone: 'purple', icon: 'columns' },
         { label: 'Total Values', value: totalCellCount(payload.rows, payload.columns).toLocaleString(), tone: 'blue', icon: 'values' },
-        { label: 'Missing Values', value: String(sumMissing(payload.statistics)), tone: 'amber', icon: 'missing' },
+        { label: 'Missing', value: String(sumMissing(payload.statistics)), tone: 'amber', icon: 'missing' },
         { label: 'Outliers', value: String(sumOutliers(payload.statistics)), tone: 'red', icon: 'outliers' },
         { label: 'Numeric', value: String(payload.numerical_columns.length), tone: 'blue', icon: 'numeric' },
         { label: 'Categorical', value: String(payload.categorical_columns.length), tone: 'green', icon: 'categorical' },
@@ -183,20 +183,11 @@ export default function CleaningPanel() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <section className={styles.hero}>
-          <h1>Data Cleaning</h1>
-          <p>
-            Inspect, clean, and prepare your dataset.
-            {datasetId ? ` · Dataset #${datasetId}` : ''}
-            {loading ? ' · processing…' : ''}
-          </p>
-        </section>
-
         {error && <p className={styles.errorBanner} role="alert">{error}</p>}
 
         {payload && (
           <>
-            <header className={styles.pageHeader}>
+            <header className={styles.headerPanel}>
               <Image
                 src={dataProcessingImg}
                 alt=""
@@ -205,8 +196,8 @@ export default function CleaningPanel() {
                 className={styles.headerArt}
                 priority
               />
-              <div className={styles.headerMain}>
-                <div className={styles.headerTitles}>
+              <div className={styles.headerTop}>
+                <div className={styles.headerInfo}>
                   <span className={styles.headerKicker}>DataSense · Pipeline</span>
                   <h1 className={styles.headerTitle}>Data Cleaning Studio</h1>
                   <p className={styles.headerMeta}>
@@ -215,42 +206,42 @@ export default function CleaningPanel() {
                     {loading ? ' · processing…' : ''}
                   </p>
                 </div>
-                <div className={styles.stepsSection}>
-                  <div className={styles.stepsLabelRow}>
-                    <span className={styles.stepsLabel}>Cleaning steps</span>
-                    <span className={styles.stepCountBadge}>{stepHistory.length} applied</span>
-                  </div>
-                  <div className={styles.stepsTrack} aria-label="Cleaning step pipeline">
-                    {stepHistory.length === 0 ? (
-                      <p className={styles.stepsEmpty}>
-                        No steps yet — run a cleaning action to build your pipeline
-                      </p>
-                    ) : (
-                      stepHistory.map((step, i) => (
-                        <Fragment key={step.step_index}>
-                          <div className={`${styles.stepPill} ${styles[`stepTone_${CHAIN_COLORS[i % 3]}`]}`}>
-                            <span className={styles.stepNum}>{i + 1}</span>
-                            <div className={styles.stepText}>
-                              <strong>{step.label}</strong>
-                              <small>{step.detail}</small>
-                            </div>
-                          </div>
-                          {i < stepHistory.length - 1 && (
-                            <span className={styles.stepConnector} aria-hidden="true" />
-                          )}
-                        </Fragment>
-                      ))
-                    )}
-                  </div>
+                <div className={styles.headerStepsBadge}>
+                  <span className={styles.stepCountBadge}>{stepHistory.length} steps applied</span>
                 </div>
+              </div>
+
+              <div className={styles.stepsTrack} aria-label="Cleaning step pipeline">
+                {stepHistory.length === 0 ? (
+                  <p className={styles.stepsEmpty}>
+                    No steps yet — run a cleaning action to build your pipeline
+                  </p>
+                ) : (
+                  stepHistory.map((step, i) => (
+                    <Fragment key={step.step_index}>
+                      <div className={`${styles.stepPill} ${styles[`stepTone_${CHAIN_COLORS[i % 3]}`]}`}>
+                        <span className={styles.stepNum}>{i + 1}</span>
+                        <div className={styles.stepText}>
+                          <strong>{step.label}</strong>
+                          <small>{step.detail}</small>
+                        </div>
+                      </div>
+                      {i < stepHistory.length - 1 && (
+                        <span className={styles.stepConnector} aria-hidden="true" />
+                      )}
+                    </Fragment>
+                  ))
+                )}
               </div>
             </header>
 
             <section className={styles.statsGrid}>
               {stats.map((stat) => (
                 <article key={stat.label} className={`${styles.statCard} ${styles[stat.tone]}`}>
-                  <span className={`${styles.statIcon} ${styles[`icon_${stat.icon}`]}`} aria-hidden="true" />
-                  <div>
+                  <span className={`${styles.statIconWrap} ${styles[`statIcon_${stat.tone}`]}`} aria-hidden="true">
+                    <StatIcon name={stat.icon} />
+                  </span>
+                  <div className={styles.statText}>
                     <p>{stat.label}</p>
                     <strong>{stat.value}</strong>
                   </div>
@@ -274,6 +265,7 @@ export default function CleaningPanel() {
                         className={[
                           styles.colCard,
                           status.clean ? styles.colClean : '',
+                          !status.clean && status.issues.length > 0 ? styles.colHasIssues : '',
                           selected ? styles.colSelected : '',
                         ].filter(Boolean).join(' ')}
                         onClick={() => setSelectedColumn(name)}
@@ -285,48 +277,23 @@ export default function CleaningPanel() {
                           </span>
                         </div>
                         <div className={styles.colActions}>
-                          {status.issues.map((issue) => (
-                            <span
-                              key={issue.type}
-                              className={`${styles.issueBadge} ${issue.type === 'missing' ? styles.issueMissing : styles.issueOutliers}`}
-                              title={`${issue.label}: ${issue.count}`}
-                            >
-                              <span className={styles.issueType}>{issue.label}</span>
-                              <span className={styles.issueCount}>{issue.count}</span>
-                            </span>
-                          ))}
-                          {status.clean && (
+                          {status.clean ? (
                             <span className={styles.cleanBadge} title="Column is clean">
                               <CheckIcon />
                               Cleaned
                             </span>
+                          ) : (
+                            status.issues.map((issue) => (
+                              <span
+                                key={issue.type}
+                                className={`${styles.issueBadge} ${issue.type === 'missing' ? styles.issueMissing : styles.issueOutliers}`}
+                                title={`${issue.label}: ${issue.count}`}
+                              >
+                                <span className={styles.issueType}>{issue.label}</span>
+                                <span className={styles.issueCount}>{issue.count}</span>
+                              </span>
+                            ))
                           )}
-                          <button
-                            type="button"
-                            className={styles.colToolBtn}
-                            title="Preview cleaned data"
-                            aria-label={`Preview dataset including ${name}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowPreview(true);
-                            }}
-                          >
-                            <PreviewIcon />
-                          </button>
-                          <button
-                            type="button"
-                            className={`${styles.colToolBtn} ${styles.colToolDanger}`}
-                            title={`Drop column ${name}`}
-                            aria-label={`Drop column ${name}`}
-                            disabled={loading || isLocked}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (!window.confirm(`Drop column "${name}"?`)) return;
-                              runClean({ action: 'drop_column', columns: [name] });
-                            }}
-                          >
-                            <TrashIcon />
-                          </button>
                         </div>
                       </button>
                     );
@@ -421,7 +388,9 @@ export default function CleaningPanel() {
                   <h2>Utility Actions</h2>
                   <div className={styles.utilityList}>
                     <div className={styles.utilityBlock}>
-                      <span className={`${styles.utilIcon} ${styles.utilDrop}`} aria-hidden="true" />
+                      <span className={`${styles.utilIcon} ${styles.utilDrop}`} aria-hidden="true">
+                        <TrashIcon />
+                      </span>
                       <div>
                         <strong>Drop Column</strong>
                         <button
@@ -439,7 +408,9 @@ export default function CleaningPanel() {
                       </div>
                     </div>
                     <div className={styles.utilityBlock}>
-                      <span className={`${styles.utilIcon} ${styles.utilPreview}`} aria-hidden="true" />
+                      <span className={`${styles.utilIcon} ${styles.utilPreview}`} aria-hidden="true">
+                        <PreviewIcon />
+                      </span>
                       <div>
                         <strong>Preview Data</strong>
                         <button type="button" className={styles.utilBtn} onClick={() => setShowPreview(true)}>
@@ -451,80 +422,53 @@ export default function CleaningPanel() {
                 </article>
 
                 <article className={styles.panel}>
-                  <div className={styles.controlHeader}>
-                    <h2>Dataset Controls</h2>
-                    <span className={styles.stepBadge}>{stepHistory.length} steps</span>
-                  </div>
-                  <div className={styles.controls}>
-                    <div className={styles.controlRail} aria-label="Cleaning step chain">
-                      {stepHistory.length === 0 ? (
-                        <span className={styles.chainEmpty}>0</span>
-                      ) : (
-                        stepHistory.map((step, i) => (
-                          <div key={step.step_index} className={styles.chainItem}>
-                            <span className={styles[CHAIN_COLORS[i % 3]]}>{i + 1}</span>
-                            {i < stepHistory.length - 1 && <i />}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    <div className={styles.controlRight}>
-                      <div className={styles.chainLabels}>
-                        {stepHistory.length === 0 ? (
-                          <p className={styles.chainHint}>Steps appear here as you clean.</p>
-                        ) : (
-                          stepHistory.map((step) => (
-                            <div key={step.step_index} className={styles.chainLabelRow}>
-                              <strong>{step.label}</strong>
-                              <small>{step.detail}</small>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                      <div className={styles.controlButtons}>
-                        <button
-                          type="button"
-                          className={styles.undoBtn}
-                          disabled={loading || isLocked || stepHistory.length === 0}
-                          onClick={handleUndo}
-                        >
-                          Undo Last Step
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.downloadBtn}
-                          disabled={!payload.data?.length}
-                          onClick={() =>
-                            downloadDatasetCsv(
-                              payload.data,
-                              `dataset_${datasetId}_cleaned.csv`,
-                            )
-                          }
-                        >
-                          Download CSV
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.finalizeBtn}
-                          disabled={loading || isLocked}
-                          onClick={handleFinalize}
-                        >
-                          Finalize Dataset
-                        </button>
-                      </div>
-                    </div>
+                  <h2>Dataset Controls</h2>
+                  <div className={styles.controlButtons}>
+                    <button
+                      type="button"
+                      className={styles.undoBtn}
+                      disabled={loading || isLocked || stepHistory.length === 0}
+                      onClick={handleUndo}
+                    >
+                      Undo Last Step
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.downloadBtn}
+                      disabled={!payload.data?.length}
+                      onClick={() =>
+                        downloadDatasetCsv(
+                          payload.data,
+                          `dataset_${datasetId}_cleaned.csv`,
+                        )
+                      }
+                    >
+                      Download CSV
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.finalizeBtn}
+                      disabled={loading || isLocked}
+                      onClick={handleFinalize}
+                    >
+                      Finalize Dataset
+                    </button>
                   </div>
                 </article>
               </div>
             </section>
 
-            <button
-              className={styles.visualizeButton}
-              type="button"
-              onClick={() => router.push(`/visualization?datasetId=${datasetId}`)}
-            >
-              Let&apos;s Visualize It
-            </button>
+            <div className={styles.visualizeRow}>
+              <button
+                className={styles.visualizeButton}
+                type="button"
+                onClick={() => router.push(`/visualization?datasetId=${datasetId}`)}
+              >
+                <ChartIcon />
+                Let&apos;s Visualize It
+                <ArrowIcon />
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -538,6 +482,72 @@ export default function CleaningPanel() {
         />
       )}
     </div>
+  );
+}
+
+function StatIcon({ name }: { name: string }) {
+  switch (name) {
+    case 'columns':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 4v16M15 4v16" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      );
+    case 'values':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <ellipse cx="12" cy="6" rx="8" ry="3" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      );
+    case 'numeric':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <text x="5" y="17" fontSize="14" fontWeight="bold" fill="currentColor">#</text>
+        </svg>
+      );
+    case 'categorical':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <text x="3" y="17" fontSize="12" fontWeight="bold" fill="currentColor">Aa</text>
+        </svg>
+      );
+    case 'missing':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2L1 21h22z" fill="currentColor" />
+        </svg>
+      );
+    case 'outliers':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
+          <circle cx="12" cy="12" r="2" fill="currentColor" />
+        </svg>
+      );
+    default:
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 4v16M15 4v16" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      );
+  }
+}
+
+function ChartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 20V4M20 20H4" />
+      <path d="M8 16v-4M12 16V8M16 16v-6" />
+    </svg>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
   );
 }
 

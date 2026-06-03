@@ -1,0 +1,127 @@
+.section {
+  position: relative;
+  padding: 88px 24px;
+  background: linear-gradient(180deg, #05070d 0%, #060a12 50%, #050813 100%);
+  border-top: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 50% at 80% 40%, rgba(124, 58, 237, 0.08), transparent 60%);
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 1100px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 48px 56px;
+  align-items: start;
+}
+
+.intro {
+  max-width: 520px;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 14px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  background: rgba(15, 23, 42, 0.5);
+  color: #c4b5fd;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0 0 18px;
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #f8fafc;
+}
+
+.titleAccent {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  background: linear-gradient(120deg, #e9d5ff, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lead {
+  margin: 0 0 16px;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: #cbd5e1;
+}
+
+.body {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: #64748b;
+}
+
+.pillars {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pillar {
+  padding: 20px 22px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.pillar:hover {
+  border-color: rgba(167, 139, 250, 0.28);
+  transform: translateY(-2px);
+}
+
+.pillar h3 {
+  margin: 0 0 8px;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  color: #e2e8f0;
+}
+
+.pillar p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #94a3b8;
+}
+
+@media (max-width: 900px) {
+  .inner {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .intro {
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding: 64px 20px;
+  }
+}

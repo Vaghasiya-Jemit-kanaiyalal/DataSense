@@ -1,72 +1,59 @@
+import Image from 'next/image';
+import Link from 'next/link';
+import homeIllustration from '@/assets/home-ilustration.png';
 import styles from './Hero.module.css';
-
-const STAR_COUNT = 18;
-const WAVE_COUNT = 7;
 
 export default function Hero() {
   return (
-    <section className={styles.hero}>
-      <div className={styles.starField} aria-hidden="true">
-        {Array.from({ length: STAR_COUNT }, (_, index) => (
-          <span
-            className={`${styles.star} ${styles[`star${index + 1}`]}`}
-            key={`star-${index + 1}`}
-          />
-        ))}
-      </div>
+    <section className={styles.hero} aria-labelledby="hero-heading">
+      <div className={styles.inner}>
+        <div className={styles.copy}>
+          <p className={styles.eyebrow}>
+            <span className={styles.eyebrowDot} aria-hidden="true" />
+            AI-powered data analytics
+          </p>
 
-      <div className={styles.dotField} aria-hidden="true" />
+          <h1 id="hero-heading" className={styles.heading}>
+            Turn raw data into
+            <span className={styles.headingAccent}> clear decisions</span>
+          </h1>
 
-      <div className={styles.waveScene} aria-hidden="true">
-        {Array.from({ length: WAVE_COUNT }, (_, index) => (
-          <span
-            className={`${styles.wave} ${styles[`wave${index + 1}`]}`}
-            key={`wave-${index + 1}`}
-          />
-        ))}
-        <div className={styles.waveGrid} />
-      </div>
+          <p className={styles.description}>
+            Upload, clean, visualize, and explore your datasets in one calm workspace.
+            Built for analysts who want speed without the noise.
+          </p>
 
-      <div className={styles.content}>
-        <div className={styles.subtitlePill}>
-          <span className={styles.subtitleDot} />
-          <span className={styles.subtitleText}>
-            DataSense - AI-Powered Data Analytics
-          </span>
+          <div className={styles.ctaGroup}>
+            <Link href="/upload" className={styles.ctaPrimary}>
+              Get started free
+              <span className={styles.ctaArrow} aria-hidden="true">
+                →
+              </span>
+            </Link>
+            <Link href="#features" className={styles.ctaSecondary}>
+              See how it works
+            </Link>
+          </div>
+
+          <p className={styles.trust}>
+            No credit card · CSV & Excel · Pipeline you can undo step by step
+          </p>
         </div>
 
-        <h1 className={styles.heading}>
-          Forge <span className={styles.headingIntelligence}>Intelligence</span>
-          <br />
-          From Your Data
-        </h1>
-
-        <p className={styles.description}>
-          Clean, analyze, visualize and generate actionable insights from your
-          data in seconds. Built for analysts, by analysts.
-        </p>
-
-        <div className={styles.ctaGroup}>
-          <button className={styles.ctaPrimary} type="button">
-            Get Started Free
-            <span className={styles.ctaArrow}>-&gt;</span>
-          </button>
-          <button className={styles.ctaSecondary} type="button">
-            <span className={styles.playIcon}>
-              <span className={styles.playTriangle} />
-            </span>
-            View Demo
-          </button>
+        <div className={styles.visual}>
+          <div className={styles.visualGlow} aria-hidden="true" />
+          <div className={styles.visualFrame}>
+            <Image
+              src={homeIllustration}
+              alt="Analyst exploring charts and data insights"
+              fill
+              priority
+              sizes="(max-width: 900px) 100vw, 520px"
+              className={styles.heroImage}
+            />
+          </div>
         </div>
-
-        <p className={styles.trustText}>
-          Trusted by teams who{' '}
-          <span className={styles.trustHighlight}>move faster</span> with their
-          data.
-        </p>
       </div>
-
-      <div className={styles.bottomFade} />
     </section>
   );
 }

@@ -1,153 +1,140 @@
 .section {
-  background-color: #0a0a12;
-  padding: 100px 0;
+  position: relative;
+  padding: 88px 24px;
+  background:
+    radial-gradient(circle at 12% 80%, rgba(59, 130, 246, 0.08), transparent 35%),
+    linear-gradient(180deg, #050813 0%, #070a14 100%);
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(167, 139, 250, 0.4) 0 1px, transparent 1.6px);
+  background-size: 160px 140px;
+  opacity: 0.25;
 }
 
 .container {
-  max-width: 1200px;
+  position: relative;
+  z-index: 1;
+  max-width: 1160px;
   margin: 0 auto;
-  padding: 0 24px;
 }
 
-/* ── Section Header ── */
 .header {
   text-align: center;
-  margin-bottom: 64px;
+  margin-bottom: 52px;
 }
 
-.label {
+.eyebrow {
   display: inline-block;
-  color: #7c3aed;
-  font-size: 12px;
+  margin-bottom: 14px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  background: rgba(15, 23, 42, 0.5);
+  color: #c4b5fd;
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 3px;
-  margin-bottom: 16px;
 }
 
 .title {
-  font-size: 40px;
+  margin: 0 0 16px;
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
   font-weight: 700;
-  color: #ffffff;
-  margin: 0 0 20px;
   line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #f8fafc;
 }
 
 .titleAccent {
-  color: #7c3aed;
+  font-family: var(--font-display);
   font-style: italic;
-  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  background: linear-gradient(120deg, #e9d5ff, #818cf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .subtitle {
-  color: #9ca3af;
-  font-size: 17px;
-  line-height: 1.7;
-  max-width: 580px;
   margin: 0 auto;
+  max-width: 560px;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: #94a3b8;
 }
 
-/* ── Card Grid ── */
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+  gap: 16px;
 }
 
-/* ── Feature Card ── */
 .card {
-  background: #111118;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 28px;
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  padding: 22px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(11, 18, 32, 0.75);
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(124, 58, 237, 0.3);
-  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.12);
+  transform: translateY(-3px);
+  border-color: rgba(167, 139, 250, 0.25);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
 }
 
 .iconWrap {
-  width: 44px;
-  height: 44px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 16px;
   border-radius: 10px;
-  background: rgba(124, 58, 237, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
+  background: rgba(99, 102, 241, 0.12);
   flex-shrink: 0;
 }
 
 .iconWrap svg {
-  width: 22px;
-  height: 22px;
-  color: #a78bfa;
+  width: 20px;
+  height: 20px;
+  color: #a5b4fc;
 }
 
 .cardTitle {
-  font-size: 16px;
-  font-weight: 600;
-  color: #ffffff;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  color: #f1f5f9;
 }
 
 .cardDesc {
-  font-size: 14px;
-  color: #9ca3af;
+  margin: 0;
+  font-size: 0.8125rem;
   line-height: 1.6;
-  margin: 0 0 auto;
-  padding-bottom: 18px;
+  color: #64748b;
 }
 
-.learnMore {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #7c3aed;
-  text-decoration: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.2s ease;
-}
-
-.learnMore:hover {
-  color: #a78bfa;
-}
-
-/* ── Responsive ── */
 @media (max-width: 1024px) {
   .grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .title {
-    font-size: 32px;
   }
 }
 
 @media (max-width: 640px) {
   .section {
-    padding: 72px 0;
+    padding: 64px 20px;
   }
 
   .grid {
     grid-template-columns: 1fr;
-  }
-
-  .title {
-    font-size: 28px;
-  }
-
-  .subtitle {
-    font-size: 15px;
   }
 }
