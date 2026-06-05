@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 /**
  * Protected route patterns — any path starting with these requires authentication.
  */
-const PROTECTED_ROUTES = ['/upload', '/cleaning', '/preview', '/visualization'];
+const PROTECTED_ROUTES = ['/upload', '/cleaning', '/preview', '/visualization', '/feature-analysis'];
 
 /**
  * Auth routes — authenticated users should be redirected away from these.
@@ -46,6 +46,7 @@ export const config = {
     '/cleaning/:path*',
     '/preview/:path*',
     '/visualization/:path*',
+    '/feature-analysis/:path*',
     '/signin',
     '/signup',
   ],

@@ -45,9 +45,15 @@ interface AppHeaderProps {
   variant?: AppHeaderVariant;
 }
 
+const SCROLL_SHOW_HIDE_THRESHOLD = 120;
+const HEADER_OFFSET_VISIBLE = '83px';
+const HEADER_OFFSET_HIDDEN = '12px';
+
 export default function AppHeader({ variant = 'full' }: AppHeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [headerHidden, setHeaderHidden] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
@@ -63,6 +69,32 @@ export default function AppHeader({ variant = 'full' }: AppHeaderProps) {
     }
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY > SCROLL_SHOW_HIDE_THRESHOLD);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--app-header-offset',
+      headerHidden ? HEADER_OFFSET_HIDDEN : HEADER_OFFSET_VISIBLE,
+    );
+  }, [headerHidden]);
+
+  const hideHeader = useCallback(() => {
+    setHeaderHidden(true);
+    setAccountOpen(false);
+    setMobileOpen(false);
+  }, []);
+
+  const showHeader = useCallback(() => {
+    setHeaderHidden(false);
   }, []);
 
   const navItems = variant === 'auth' ? AUTH_NAV_ITEMS : FULL_NAV_ITEMS;
@@ -88,9 +120,11 @@ export default function AppHeader({ variant = 'full' }: AppHeaderProps) {
     router.push(ROUTES.SIGNIN);
   };
 
+  const showCollapseControl = scrolled && !headerHidden;
+
   return (
     <>
-      <header className={styles.header}>
+      <header className={`${styles.header} ${headerHidden ? styles.headerHidden : ''}`}>
         <div className={styles.accentBar} aria-hidden="true" />
         <div className={styles.container}>
           <Link href={ROUTES.HOME} className={styles.logo} aria-label="DataSense home">
@@ -167,6 +201,28 @@ export default function AppHeader({ variant = 'full' }: AppHeaderProps) {
         </div>
       </header>
 
+      {showCollapseControl && (
+        <button
+          type="button"
+          className={`${styles.collapseHeaderBtn} ${styles.collapseHeaderBtnVisible}`}
+          aria-label="Hide navigation header"
+          onClick={hideHeader}
+        >
+          <ChevronUpIcon />
+        </button>
+      )}
+
+      {headerHidden && (
+        <button
+          type="button"
+          className={styles.restoreHeaderBtn}
+          aria-label="Show navigation header"
+          onClick={showHeader}
+        >
+          <ChevronLeftIcon />
+        </button>
+      )}
+
       <div
         className={`${styles.mobileMenu} ${mobileOpen ? styles.mobileMenuOpen : ''}`}
         aria-hidden={!mobileOpen}
@@ -201,5 +257,21 @@ export default function AppHeader({ variant = 'full' }: AppHeaderProps) {
         )}
       </div>
     </>
+  );
+}
+
+function ChevronUpIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className={styles.controlIcon}>
+      <path d="M4 10l4-4 4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className={styles.controlIcon}>
+      <path d="M10 4L6 8l4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

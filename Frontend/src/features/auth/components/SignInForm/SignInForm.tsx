@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { resolvePostAuthRoute } from '@/services/data';
 import { useAuthStore } from '@/store/authStore';
 import styles from './SignInForm.module.css';
 
@@ -11,6 +12,7 @@ export default function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, isLoading, error, clearError } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -18,7 +20,12 @@ export default function SignInForm() {
     clearError();
     try {
       await login(email, password);
-      router.push('/upload');
+      const callback = searchParams.get('callbackUrl');
+      if (callback && callback.startsWith('/') && !callback.startsWith('//')) {
+        router.push(callback);
+        return;
+      }
+      router.push(await resolvePostAuthRoute());
     } catch {
       // error is set in the store
     }

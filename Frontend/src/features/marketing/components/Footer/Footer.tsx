@@ -1,5 +1,9 @@
 'use client';
 
+import Image from 'next/image';
+import Link from 'next/link';
+import logoImg from '@/assets/logo.png';
+import { ROUTES } from '@/constants/routes';
 import styles from './Footer.module.css';
 
 const footerLinks = {
@@ -24,24 +28,15 @@ export default function Footer() {
         <div className={styles.top}>
           {/* Brand column */}
           <div className={styles.brandColumn}>
-            <div className={styles.logo}>
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <rect width="28" height="28" rx="6" fill="#7c3aed" />
-                <path
-                  d="M8 9H14C16.7614 9 19 11.2386 19 14C19 16.7614 16.7614 19 14 19H8V9Z"
-                  stroke="white"
-                  strokeWidth="2"
-                />
-                <circle cx="14" cy="14" r="2" fill="white" />
-              </svg>
-              <span className={styles.logoText}>DataSense</span>
-            </div>
+            <Link href={ROUTES.HOME} className={styles.logo} aria-label="DataSense home">
+              <Image
+                src={logoImg}
+                alt="DataSense"
+                width={140}
+                height={40}
+                className={styles.logoImage}
+              />
+            </Link>
             <p className={styles.brandDescription}>
               Transform your raw data into actionable insights with AI-powered
               analytics. Built for modern teams who demand speed and precision.

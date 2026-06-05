@@ -26,16 +26,15 @@
 }
 
 .logo {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  text-decoration: none;
 }
 
-.logoText {
-  font-size: 20px;
-  font-weight: 700;
-  color: #ffffff;
-  letter-spacing: -0.02em;
+.logoImage {
+  width: auto;
+  height: 36px;
+  object-fit: contain;
 }
 
 .brandDescription {
