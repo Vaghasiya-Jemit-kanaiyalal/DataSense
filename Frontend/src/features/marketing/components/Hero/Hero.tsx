@@ -40,19 +40,16 @@ export default function Hero() {
           </p>
         </div>
 
-        <div className={styles.visual}>
-          <div className={styles.visualGlow} aria-hidden="true" />
-          <div className={styles.visualFrame}>
-            <Image
-              src={homeIllustration}
-              alt="Analyst exploring charts and data insights"
-              fill
-              priority
-              sizes="(max-width: 900px) 100vw, 520px"
-              className={styles.heroImage}
-            />
-          </div>
-        </div>
+     <div className={styles.visual}>
+  <Image
+    src={homeIllustration}
+    alt="Analyst exploring charts and data insights"
+    width={900}
+    height={900}
+    priority
+    className={styles.heroImage}
+  />
+</div>
       </div>
     </section>
   );
