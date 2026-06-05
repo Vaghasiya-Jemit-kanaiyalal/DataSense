@@ -158,12 +158,19 @@ const uploadFile = [uploadMiddleware, async (req, res) => {
 const listUserFiles = async (req, res) => {
   try {
     await init();
-    const datasets = await datasetService.listDatasets(req.user.id);
+    const scope = req.query.scope === 'finalized' || req.query.scope === 'all'
+      ? req.query.scope
+      : 'resumable';
+    const datasets = await datasetService.listDatasets(req.user.id, scope);
     return res.status(200).json({ datasets });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to list files', error: error.message });
   }
 };
+
+async function markDatasetActive(userId, datasetId) {
+  await datasetService.activateDataset(userId, datasetId);
+}
 
 const activateDataset = async (req, res) => {
   try {
@@ -171,7 +178,13 @@ const activateDataset = async (req, res) => {
     const datasetId = Number(req.params.id);
     const meta = await datasetService.getDataset(req.user.id, datasetId);
     if (!meta) return res.status(404).json({ message: 'Dataset not found' });
-    await datasetService.activateDataset(req.user.id, datasetId);
+    if (datasetService.isFinalized(meta)) {
+      return res.status(403).json({
+        message: 'Dataset is finalized. Re-upload the original file to restore your saved pipeline.',
+        code: 'REUPLOAD_REQUIRED',
+      });
+    }
+    await markDatasetActive(req.user.id, datasetId);
     const ml = await runPipeline(req.user.id, datasetId, [], 20, 0);
     return res.status(200).json(ml);
   } catch (error) {
@@ -186,6 +199,11 @@ const previewFile = async (req, res) => {
   try {
     await init();
     const id = Number(req.params.id);
+    const meta = await datasetService.getDataset(req.user.id, id);
+    if (!meta) return res.status(404).json({ message: 'Dataset not found' });
+    if (!datasetService.isFinalized(meta)) {
+      await markDatasetActive(req.user.id, id);
+    }
     const pageSize = Number(req.query.rows) || 20;
     const page = Math.max(1, Number(req.query.page) || 1);
     const offset = Number(req.query.offset);
@@ -208,6 +226,11 @@ const getActive = async (req, res) => {
     await init();
     const active = await datasetService.getActiveDataset(req.user.id);
     if (!active) return res.status(404).json({ message: 'No active dataset' });
+    if (datasetService.isFinalized(active)) {
+      return res.status(404).json({ message: 'No resumable dataset' });
+    }
+
+    await markDatasetActive(req.user.id, active.id);
 
     const resumeMeta = await buildResumeMeta(req.user.id, active);
 
@@ -247,6 +270,8 @@ const cleanDataset = async (req, res) => {
       return res.status(403).json({ message: 'Dataset is finalized; cleaning is locked.' });
     }
 
+    await markDatasetActive(req.user.id, datasetId);
+
     const pipeline = await datasetService.getPipelineByDataset(datasetId);
     if (!pipeline) return res.status(404).json({ message: 'Pipeline not found' });
 
@@ -284,6 +309,8 @@ const undoStep = async (req, res) => {
       return res.status(403).json({ message: 'Dataset is finalized; undo is locked.' });
     }
 
+    await markDatasetActive(req.user.id, datasetId);
+
     const pipeline = await datasetService.getPipelineByDataset(datasetId);
     if (!pipeline) return res.status(404).json({ message: 'Pipeline not found' });
 
@@ -299,6 +326,108 @@ const undoStep = async (req, res) => {
   } catch (error) {
     return res.status(error.status || 500).json({
       message: 'Undo failed',
+      error: error.message,
+    });
+  }
+};
+
+const reopenDataset = [uploadMiddleware, async (req, res) => {
+  try {
+    await init();
+    const datasetId = Number(req.params.datasetId);
+    const file = req.file;
+    if (!file) return res.status(400).json({ message: 'No file uploaded' });
+
+    const meta = await datasetService.getDataset(req.user.id, datasetId);
+    if (!meta) return res.status(404).json({ message: 'Dataset not found' });
+    if (!datasetService.isFinalized(meta)) {
+      return res.status(400).json({ message: 'Dataset is not finalized. Use normal resume instead.' });
+    }
+
+    const expectedName = (meta.original_filename || '').toLowerCase();
+    const uploadedName = (file.originalname || '').toLowerCase();
+    if (expectedName && uploadedName && expectedName !== uploadedName) {
+      return res.status(400).json({
+        message: `Please upload the original file: ${meta.original_filename}`,
+        code: 'FILENAME_MISMATCH',
+      });
+    }
+
+    await datasetCache.set(req.user.id, datasetId, file.buffer);
+    const storagePath = saveFileToDisk(req.user.id, datasetId, file);
+    await datasetService.updateStoragePath(datasetId, storagePath);
+
+    const mlUpload = await mlService.uploadDataset({
+      userId: req.user.id,
+      datasetId,
+      file,
+      previewRows: 20,
+    });
+
+    const columnNames = mlUpload.data?.[0] ? Object.keys(mlUpload.data[0]) : [];
+    await datasetService.updateDatasetMeta(datasetId, {
+      totalRows: mlUpload.rows,
+      totalColumns: mlUpload.columns,
+      columnNames,
+    });
+
+    await datasetService.reopenDatasetRecord(datasetId);
+    await markDatasetActive(req.user.id, datasetId);
+
+    const pipeline = await datasetService.getPipelineByDataset(datasetId);
+    const steps = pipeline ? await datasetService.getSteps(pipeline.id) : [];
+    const ml = await runPipeline(req.user.id, datasetId, steps, 20, 0);
+
+    return res.status(200).json({
+      ...ml,
+      reopened: true,
+      total_steps: steps.length,
+      pipeline_steps: formatStepHistory(steps),
+      message: steps.length
+        ? `Original file restored. ${steps.length} saved cleaning step(s) re-applied.`
+        : 'Original file restored.',
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(error.status || 500).json({
+      message: 'Reopen failed',
+      error: error.message,
+    });
+  }
+}];
+
+const deleteDatasetHandler = async (req, res) => {
+  try {
+    await init();
+    const datasetId = Number(req.params.datasetId);
+    const meta = await datasetService.getDataset(req.user.id, datasetId);
+    if (!meta) return res.status(404).json({ message: 'Dataset not found' });
+
+    const storagePath = meta.storage_path;
+    if (storagePath) {
+      const candidates = [
+        path.join(UPLOAD_DIR, storagePath),
+        storagePath,
+        path.isAbsolute(storagePath) ? storagePath : null,
+      ].filter(Boolean);
+      for (const fullPath of candidates) {
+        if (fs.existsSync(fullPath)) {
+          fs.unlinkSync(fullPath);
+          break;
+        }
+      }
+    }
+
+    await datasetCache.del(req.user.id, datasetId);
+    await datasetService.deleteDataset(req.user.id, datasetId);
+
+    return res.status(200).json({
+      message: 'Dataset deleted',
+      dataset_id: datasetId,
+    });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      message: 'Delete failed',
       error: error.message,
     });
   }
@@ -345,5 +474,7 @@ module.exports = {
   getActive,
   cleanDataset,
   undoStep,
+  reopenDataset,
+  deleteDatasetHandler,
   finalizeDataset,
 };
