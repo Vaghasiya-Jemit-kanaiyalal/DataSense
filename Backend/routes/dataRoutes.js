@@ -9,11 +9,15 @@ const {
   getActive,
   cleanDataset,
   undoStep,
+  reopenDataset,
+  deleteDatasetHandler,
   finalizeDataset,
 } = require('../controllers/dataController');
 
 router.post('/upload', verifyToken, ...uploadFile);
 router.get('/mine', verifyToken, listUserFiles);
+router.post('/:datasetId/reopen', verifyToken, ...reopenDataset);
+router.delete('/:datasetId', verifyToken, deleteDatasetHandler);
 router.post('/:id/activate', verifyToken, activateDataset);
 router.get('/active', verifyToken, getActive);
 router.get('/preview/:id', verifyToken, previewFile);
