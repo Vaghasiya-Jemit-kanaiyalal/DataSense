@@ -1,4 +1,18 @@
-import { api } from './api';
+import { ROUTES } from '@/constants/routes';
+import { api, authFetch } from './api';
+
+export interface DatasetListItem {
+  id: number;
+  name: string;
+  mime?: string;
+  size?: number;
+  uploadedAt?: string;
+  rows?: number;
+  columns?: number;
+  isActive?: boolean;
+  cleaningSteps?: number;
+  status?: string;
+}
 
 export interface PipelineStepInfo {
   step_index: number;
@@ -75,9 +89,22 @@ export function finalizeDataset(datasetId: number) {
   return api.post<DatasetPayload>(`/data/${datasetId}/finalize`);
 }
 
+export async function deleteDataset(datasetId: number) {
+  await api.delete<{ message: string; dataset_id: number }>(`/data/${datasetId}`);
+  if (getActiveDatasetId() === datasetId) {
+    clearActiveDatasetId();
+  }
+}
+
 export function setActiveDatasetId(id: number) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('activeDatasetId', String(id));
+  }
+}
+
+export function clearActiveDatasetId() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('activeDatasetId');
   }
 }
 
@@ -87,12 +114,73 @@ export function getActiveDatasetId(): number | null {
   return v ? Number(v) : null;
 }
 
+export function isResumablePayload(payload: DatasetPayload): boolean {
+  return !payload.finalized && !payload.pipeline_locked && payload.status !== 'finalized';
+}
+
+export function listResumableDatasets() {
+  return api.get<{ datasets: DatasetListItem[] }>('/data/mine');
+}
+
+export function listFinalizedDatasets() {
+  return api.get<{ datasets: DatasetListItem[] }>('/data/mine?scope=finalized');
+}
+
+export async function reopenFinalizedDataset(datasetId: number, file: File): Promise<DatasetPayload> {
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await authFetch(`/data/${datasetId}/reopen`, { method: 'POST', body: fd });
+  if (!res.ok) {
+    let message = 'Failed to restore dataset';
+    try {
+      const body = await res.json();
+      message = body.message || body.error || message;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message);
+  }
+  const data = (await res.json()) as DatasetPayload;
+  setActiveDatasetId(datasetId);
+  return data;
+}
+
 export async function resumeActiveDataset(): Promise<DatasetPayload | null> {
   try {
     const data = await getActiveDataset();
+    if (!isResumablePayload(data)) {
+      clearActiveDatasetId();
+      return null;
+    }
     setActiveDatasetId(data.dataset_id);
     return data;
   } catch {
+    clearActiveDatasetId();
     return null;
   }
+}
+
+/** Pick the dashboard route that matches saved pipeline progress. */
+export function getResumeDestination(payload: DatasetPayload): string {
+  const id = payload.dataset_id;
+  if (payload.finalized || payload.pipeline_locked || payload.status === 'finalized') {
+    return `${ROUTES.VISUALIZATION}?datasetId=${id}`;
+  }
+  const steps = payload.total_steps ?? payload.pipeline_steps?.length ?? 0;
+  if (steps > 0) {
+    return `${ROUTES.CLEANING}?datasetId=${id}`;
+  }
+  if (payload.status === 'cleaning') {
+    return `${ROUTES.CLEANING}?datasetId=${id}`;
+  }
+  return `${ROUTES.PREVIEW}?datasetId=${id}`;
+}
+
+/** Used after sign-in to land where the user left off. */
+export async function resolvePostAuthRoute(): Promise<string> {
+  const resumed = await resumeActiveDataset();
+  if (resumed?.dataset_id) {
+    return getResumeDestination(resumed);
+  }
+  return ROUTES.UPLOAD;
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { resolvePostAuthRoute } from '@/services/data';
 import { useAuthStore } from '@/store/authStore';
 import styles from './SignUpForm.module.css';
 
@@ -25,7 +26,7 @@ export default function SignUpForm() {
 
     try {
       await signup(fullName, email, password);
-      router.push('/upload');
+      router.push(await resolvePostAuthRoute());
     } catch {
       // error is set in the store
     }

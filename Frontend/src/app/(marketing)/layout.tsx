@@ -9,7 +9,7 @@ export default function MarketingLayout({
   return (
     <>
       <AppHeader variant="full" />
-      <main style={{ paddingTop: '68px' }}>{children}</main>
+      <main className="app-main">{children}</main>
       <Footer />
     </>
   );

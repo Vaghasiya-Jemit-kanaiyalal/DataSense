@@ -2,18 +2,96 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, authFetch } from '@/services/api';
+import { authFetch } from '@/services/api';
 import {
   activateDataset,
+  deleteDataset,
+  isResumablePayload,
+  listFinalizedDatasets,
+  listResumableDatasets,
+  reopenFinalizedDataset,
   resumeActiveDataset,
   setActiveDatasetId,
+  type DatasetListItem,
   type DatasetPayload,
 } from '@/services/data';
 import { useAuthHydrated } from '@/hooks';
 import { useAuthStore } from '@/store/authStore';
 import styles from './UploadPanel.module.css';
 
-/* ──── Resumed datasets are fetched from server ──── */
+type DatasetRow = DatasetListItem;
+
+function fileTypeLabel(dataset: DatasetRow): string {
+  const fromMime = dataset.mime?.split('/')?.[1]?.toUpperCase();
+  if (fromMime) return fromMime;
+  const ext = dataset.name.split('.').pop()?.toUpperCase();
+  return ext ?? 'FILE';
+}
+
+function formatFileSize(bytes?: number): string {
+  if (!bytes) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatUploadedAt(value?: string): string {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function isDatasetInProgress(dataset: DatasetRow): boolean {
+  if (dataset.status === 'finalized') return false;
+  return Boolean(
+    dataset.isActive ||
+    (dataset.cleaningSteps ?? 0) > 0 ||
+    dataset.status === 'cleaning' ||
+    dataset.status === 'in_progress',
+  );
+}
+
+function mergeResumeIntoList(list: DatasetRow[], resume: DatasetPayload): DatasetRow[] {
+  if (!isResumablePayload(resume)) return list;
+
+  const id = resume.dataset_id;
+  const cleaningSteps = resume.total_steps ?? resume.pipeline_steps?.length ?? 0;
+  const resumeRow: DatasetRow = {
+    id,
+    name: resume.original_filename ?? `Dataset #${id}`,
+    rows: resume.rows,
+    columns: resume.columns,
+    isActive: true,
+    cleaningSteps,
+    status: resume.finalized ? 'finalized' : cleaningSteps > 0 ? 'cleaning' : 'uploaded',
+  };
+
+  const existingIndex = list.findIndex((d) => d.id === id);
+  if (existingIndex >= 0) {
+    const merged = list.map((d) =>
+      d.id === id
+        ? { ...d, ...resumeRow, isActive: true }
+        : { ...d, isActive: false },
+    );
+    const active = merged[existingIndex];
+    const rest = merged.filter((_, index) => index !== existingIndex);
+    return [active, ...rest];
+  }
+
+  return [resumeRow, ...list.map((d) => ({ ...d, isActive: false }))];
+}
+
+function buildDatasetMeta(dataset: DatasetRow): string {
+  const parts: string[] = [];
+  if (dataset.mime) parts.push(dataset.mime);
+  if (dataset.size) parts.push(formatFileSize(dataset.size));
+  if (dataset.uploadedAt) parts.push(formatUploadedAt(dataset.uploadedAt));
+  if (dataset.cleaningSteps && dataset.cleaningSteps > 0) {
+    parts.push(`${dataset.cleaningSteps} cleaning step${dataset.cleaningSteps === 1 ? '' : 's'} saved`);
+  }
+  return parts.length > 0 ? parts.join(' · ') : 'Ready to preview';
+}
 
 /* ──── File type badge icon ──── */
 function FileIcon({ type, badgeColor }: { type: string; badgeColor: string }) {
@@ -66,22 +144,43 @@ function CloudUploadIcon() {
   );
 }
 
+async function loadDatasetLists() {
+  let list: DatasetRow[] = [];
+  try {
+    const data = await listResumableDatasets();
+    list = data.datasets || [];
+  } catch {
+    /* ignore */
+  }
+
+  const resumed = await resumeActiveDataset();
+  if (resumed?.dataset_id) {
+    setActiveDatasetId(resumed.dataset_id);
+    list = mergeResumeIntoList(list, resumed);
+  }
+
+  let finalized: DatasetRow[] = [];
+  try {
+    const data = await listFinalizedDatasets();
+    finalized = data.datasets || [];
+  } catch {
+    /* ignore */
+  }
+
+  return { list, finalized };
+}
+
 export default function UploadPanel() {
   const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
-  type DatasetRow = {
-    id: number;
-    name: string;
-    mime?: string;
-    size?: number;
-    uploadedAt?: string;
-    rows?: number;
-    columns?: number;
-    isActive?: boolean;
-  };
   const [datasets, setDatasets] = useState<DatasetRow[]>([]);
-  const [activeResume, setActiveResume] = useState<DatasetPayload | null>(null);
+  const [finalizedDatasets, setFinalizedDatasets] = useState<DatasetRow[]>([]);
+  const [reopenError, setReopenError] = useState<string | null>(null);
+  const [reopeningId, setReopeningId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const reopenInputRef = useRef<HTMLInputElement>(null);
+  const pendingReopenId = useRef<number | null>(null);
   const hydrated = useAuthHydrated();
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -105,36 +204,79 @@ export default function UploadPanel() {
   useEffect(() => {
     if (!hydrated || !isAuthenticated) return;
 
-    async function load() {
-      try {
-        const data = await api.get<{ datasets: DatasetRow[] }>('/data/mine');
-        setDatasets(data.datasets || []);
-      } catch {
-        /* ignore */
-      }
-
-      const resumed = await resumeActiveDataset();
-      if (resumed?.dataset_id) {
-        setActiveResume(resumed);
-        setActiveDatasetId(resumed.dataset_id);
-      }
-    }
-
-    load();
+    loadDatasetLists().then(({ list, finalized }) => {
+      setDatasets(list);
+      setFinalizedDatasets(finalized);
+    });
   }, [hydrated, isAuthenticated]);
+
+  const refreshLists = useCallback(async () => {
+    const { list, finalized } = await loadDatasetLists();
+    setDatasets(list);
+    setFinalizedDatasets(finalized);
+  }, []);
 
   const resumeDataset = useCallback(
     async (id: number, target: 'preview' | 'cleaning') => {
       try {
+        setReopenError(null);
         await activateDataset(id);
         setActiveDatasetId(id);
         router.push(`/${target}?datasetId=${id}`);
       } catch (err) {
-        console.error(err);
+        const message = err instanceof Error ? err.message : 'Failed to open dataset';
+        if (message.toLowerCase().includes('finalized')) {
+          setReopenError('This dataset is finalized. Re-upload the original file in the Finalized section below.');
+        } else {
+          setReopenError(message);
+        }
       }
     },
     [router],
   );
+
+  const promptReopenFile = useCallback((datasetId: number) => {
+    setReopenError(null);
+    pendingReopenId.current = datasetId;
+    reopenInputRef.current?.click();
+  }, []);
+
+  const handleReopenFile = useCallback(async (file: File) => {
+    const datasetId = pendingReopenId.current;
+    if (!datasetId) return;
+    setReopeningId(datasetId);
+    setReopenError(null);
+    try {
+      const result = await reopenFinalizedDataset(datasetId, file);
+      await refreshLists();
+      const steps = result.total_steps ?? result.pipeline_steps?.length ?? 0;
+      router.push(steps > 0 ? `/cleaning?datasetId=${datasetId}` : `/preview?datasetId=${datasetId}`);
+    } catch (err) {
+      setReopenError(err instanceof Error ? err.message : 'Failed to restore dataset');
+    } finally {
+      setReopeningId(null);
+      pendingReopenId.current = null;
+      if (reopenInputRef.current) reopenInputRef.current.value = '';
+    }
+  }, [refreshLists, router]);
+
+  const handleDeleteDataset = useCallback(async (dataset: DatasetRow) => {
+    const confirmed = window.confirm(
+      `Delete "${dataset.name}"? This removes the dataset and all saved cleaning steps.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingId(dataset.id);
+    setReopenError(null);
+    try {
+      await deleteDataset(dataset.id);
+      await refreshLists();
+    } catch (err) {
+      setReopenError(err instanceof Error ? err.message : 'Failed to delete dataset');
+    } finally {
+      setDeletingId(null);
+    }
+  }, [refreshLists]);
 
   // Upload handler
   const uploadFile = useCallback(async (file: File) => {
@@ -149,8 +291,7 @@ export default function UploadPanel() {
           router.push(`/preview?datasetId=${uploaded.dataset_id}`);
           return;
         }
-        const data = await api.get<{ datasets: DatasetRow[] }>('/data/mine');
-        setDatasets(data.datasets || []);
+        await refreshLists();
       } else {
         const text = await res.text().catch(() => null);
         console.error('Upload failed', res.status, text);
@@ -159,7 +300,7 @@ export default function UploadPanel() {
     } catch (err) {
       console.error(err);
     }
-  }, [router]);
+  }, [router, refreshLists]);
 
   const handleChooseFile = useCallback(() => {
     fileInputRef.current?.click();
@@ -247,80 +388,158 @@ export default function UploadPanel() {
           />
         </div>
 
-        {activeResume && (
-          <div className={styles.resumeBanner}>
-            <div>
-              <p className={styles.resumeTitle}>Continue where you left off</p>
-              <p className={styles.resumeMeta}>
-                {activeResume.original_filename ?? `Dataset #${activeResume.dataset_id}`}
-                {' · '}
-                {activeResume.total_steps ?? 0} cleaning steps saved
-                {activeResume.rows ? ` · ${activeResume.rows.toLocaleString()} rows` : ''}
-              </p>
-            </div>
-            <div className={styles.resumeActions}>
-              <button
-                type="button"
-                className={styles.previewBtn}
-                onClick={() => resumeDataset(activeResume.dataset_id, 'preview')}
-              >
-                Preview
-              </button>
-              <button
-                type="button"
-                className={styles.resumeCleanBtn}
-                onClick={() => resumeDataset(activeResume.dataset_id, 'cleaning')}
-              >
-                Continue Cleaning
-              </button>
-            </div>
-          </div>
+        {reopenError && (
+          <p className={styles.errorBanner} role="alert">{reopenError}</p>
         )}
 
-        {/* ---- Resumed Datasets ---- */}
+        {/* ---- In-progress datasets ---- */}
         <div className={styles.resumedSection}>
           <h2 className={styles.resumedLabel}>YOUR DATASETS</h2>
+          <p className={styles.sectionHint}>In-progress work you can resume anytime.</p>
 
           <div className={styles.datasetList}>
             {datasets.length === 0 && (
-              <p className={styles.emptyList}>No datasets yet. Upload a file above.</p>
+              <p className={styles.emptyList}>No in-progress datasets. Upload a file above.</p>
             )}
-            {datasets.map((dataset) => (
-              <div key={dataset.id} className={`${styles.datasetCard} ${dataset.isActive ? styles.datasetActive : ''}`}>
+            {datasets.map((dataset) => {
+              const inProgress = isDatasetInProgress(dataset);
+              return (
+              <div key={dataset.id} className={`${styles.datasetCard} ${inProgress ? styles.datasetActive : ''}`}>
                 <div className={styles.datasetLeft}>
-                  <FileIcon type={dataset.mime?.split('/')?.[1]?.toUpperCase() ?? 'FILE'} badgeColor={'#7c3aed'} />
+                  <FileIcon type={fileTypeLabel(dataset)} badgeColor="#7c3aed" />
                   <div className={styles.datasetInfo}>
-                    <p className={styles.datasetName}>{dataset.name}</p>
-                    <p className={styles.datasetMeta}>
-                      {dataset.mime} &bull; {dataset.size} &bull; {dataset.uploadedAt}
-                    </p>
+                    <div className={styles.datasetNameRow}>
+                      <p className={styles.datasetName}>{dataset.name}</p>
+                      {inProgress && (
+                        <span className={styles.activeBadge}>In progress</span>
+                      )}
+                    </div>
+                    <p className={styles.datasetMeta}>{buildDatasetMeta(dataset)}</p>
                   </div>
                 </div>
 
                 <div className={styles.datasetRight}>
                   <span className={styles.datasetStats}>
-                    {dataset.rows ?? '-'} Rows &bull; {dataset.columns ?? '-'} Columns
+                    {typeof dataset.rows === 'number' ? dataset.rows.toLocaleString() : '—'} Rows &bull;{' '}
+                    {dataset.columns ?? '—'} Columns
                   </span>
                   <button
                     type="button"
                     className={styles.previewBtn}
                     onClick={() => resumeDataset(dataset.id, 'preview')}
                   >
-                    {dataset.isActive ? 'Resume' : 'Open'}
+                    Preview
                   </button>
-                  <button type="button" className={styles.moreBtn} aria-label="More options">
-                    <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16">
-                      <circle cx="8" cy="3" r="1.5" />
-                      <circle cx="8" cy="8" r="1.5" />
-                      <circle cx="8" cy="13" r="1.5" />
-                    </svg>
+                  {inProgress && (
+                    <button
+                      type="button"
+                      className={styles.resumeCleanBtn}
+                      onClick={() => resumeDataset(dataset.id, 'cleaning')}
+                    >
+                      Continue Cleaning
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.trashBtn}
+                    aria-label={`Delete ${dataset.name}`}
+                    disabled={deletingId === dataset.id}
+                    onClick={() => handleDeleteDataset(dataset)}
+                  >
+                    <TrashIcon />
                   </button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
+
+        {finalizedDatasets.length > 0 && (
+          <div className={styles.finalizedSection}>
+            <h2 className={styles.resumedLabel}>FINALIZED DATASETS</h2>
+            <p className={styles.sectionHint}>
+              Cleaning is complete. Re-upload the original file to restore saved pipeline steps.
+            </p>
+            <div className={styles.datasetList}>
+              {finalizedDatasets.map((dataset) => (
+                <div key={dataset.id} className={`${styles.datasetCard} ${styles.datasetFinalized}`}>
+                  <div className={styles.datasetLeft}>
+                    <FileIcon type={fileTypeLabel(dataset)} badgeColor="#475569" />
+                    <div className={styles.datasetInfo}>
+                      <div className={styles.datasetNameRow}>
+                        <p className={styles.datasetName}>{dataset.name}</p>
+                        <span className={styles.finalizedBadge}>Finalized</span>
+                      </div>
+                      <p className={styles.datasetMeta}>
+                        {buildDatasetMeta(dataset)}
+                        {(dataset.cleaningSteps ?? 0) > 0 &&
+                          ` · ${dataset.cleaningSteps} saved step${dataset.cleaningSteps === 1 ? '' : 's'} in database`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className={styles.datasetRight}>
+                    <span className={styles.datasetStats}>
+                      {typeof dataset.rows === 'number' ? dataset.rows.toLocaleString() : '—'} Rows &bull;{' '}
+                      {dataset.columns ?? '—'} Columns
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.reuploadBtn}
+                      disabled={reopeningId === dataset.id}
+                      onClick={() => promptReopenFile(dataset.id)}
+                    >
+                      {reopeningId === dataset.id ? 'Restoring…' : 'Re-upload original file'}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.previewBtn}
+                      onClick={() => router.push(`/visualization?datasetId=${dataset.id}`)}
+                    >
+                      View charts
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.trashBtn}
+                      aria-label={`Delete ${dataset.name}`}
+                      disabled={deletingId === dataset.id}
+                      onClick={() => handleDeleteDataset(dataset)}
+                    >
+                      <TrashIcon />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <input
+          ref={reopenInputRef}
+          type="file"
+          accept=".csv,.xlsx,.xls,.json"
+          className={styles.fileInput}
+          tabIndex={-1}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleReopenFile(f);
+          }}
+        />
       </div>
     </div>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className={styles.trashIcon}>
+      <path
+        d="M3 5h10M6 5V3.5h4V5M5.5 5l.6 8h4.8l.6-8"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

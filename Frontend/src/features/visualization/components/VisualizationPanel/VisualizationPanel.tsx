@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { DashboardFooter } from '@/components/layout';
 import { useAuthHydrated } from '@/hooks';
 import {
   getPreview,
@@ -153,7 +152,6 @@ export default function VisualizationPanel() {
             Go to Upload
           </button>
         </div>
-        <DashboardFooter />
       </div>
     );
   }
@@ -245,7 +243,6 @@ export default function VisualizationPanel() {
           </div>
         </div>
       </div>
-      <DashboardFooter />
     </div>
   );
 }
