@@ -26,7 +26,7 @@ export default function AboutUs() {
             <span className={styles.titleAccent}> your data</span>
           </h2>
           <p className={styles.lead}>
-            DataSense started as an internship project with a simple goal: give analysts one
+            DataSense started as an  project with a simple goal: give analysts one
             polished place to clean, explore, and prepare data — without the usual friction.
           </p>
           <p className={styles.body}>

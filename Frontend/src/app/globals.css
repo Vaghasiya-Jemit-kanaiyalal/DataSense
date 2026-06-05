@@ -140,6 +140,7 @@ html {
   text-size-adjust: 100%;
   font-size: 16px;
   hanging-punctuation: first last;
+  background-color: var(--bg-darkest);
 }
 
 body {

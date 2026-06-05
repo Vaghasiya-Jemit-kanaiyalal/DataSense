@@ -170,44 +170,55 @@
   line-height: 1.5;
 }
 
+
 .visual {
   position: relative;
+
   display: flex;
-  justify-content: center;
   align-items: center;
-}
+  justify-content: center;
 
-.visualGlow {
-  position: absolute;
-  width: 88%;
-  height: 88%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.22), transparent 68%);
-  filter: blur(24px);
-}
+  flex: 1;
 
-.visualFrame {
-  position: relative;
-  width: 100%;
-  max-width: 520px;
-  aspect-ratio: 5 / 4;
-  border-radius: 20px;
-  overflow: hidden;
-  border: 1px solid rgba(167, 139, 250, 0.22);
-  box-shadow:
-    0 28px 64px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  min-height: 620px;
+
+  overflow: visible;
 }
 
 .heroImage {
-  object-fit: cover;
-  object-position: center;
+  width: 100%;
+  max-width: 760px;
+  height: auto;
+
+  object-fit: contain;
+
+  animation: floatImage 6s ease-in-out infinite;
+
+  filter:
+    drop-shadow(0 30px 60px rgba(0,0,0,0.35));
+
+  z-index: 2;
+}
+
+@keyframes floatImage {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-14px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 @media (max-width: 900px) {
   .hero {
     padding: 40px 20px 56px;
     min-height: auto;
+    padding-top: 140px;
   }
 
   .inner {
@@ -230,10 +241,7 @@
     justify-content: center;
   }
 
-  .visualFrame {
-    max-width: 440px;
-    margin: 0 auto;
-  }
+  
 }
 
 @media (max-width: 480px) {
