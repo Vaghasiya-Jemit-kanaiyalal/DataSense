@@ -188,6 +188,35 @@ async function finalizeDatasetRecord(datasetId) {
   if (pipeline && (await hasColumn('pipelines', 'status'))) {
     await query(`UPDATE pipelines SET status = 'finalized' WHERE id = ?`, [pipeline.id]);
   }
+  await deactivateDataset(datasetId);
+}
+
+async function deactivateDataset(datasetId) {
+  if (await hasColumn('datasets', 'is_active')) {
+    await query('UPDATE datasets SET is_active = FALSE WHERE id = ?', [datasetId]);
+  }
+}
+
+async function reopenDatasetRecord(datasetId) {
+  if (await hasColumn('datasets', 'status')) {
+    await query(`UPDATE datasets SET status = 'cleaning' WHERE id = ?`, [datasetId]);
+  }
+  const pipeline = await getPipelineByDataset(datasetId);
+  if (pipeline && (await hasColumn('pipelines', 'status'))) {
+    await query(`UPDATE pipelines SET status = 'idle' WHERE id = ?`, [pipeline.id]);
+  }
+}
+
+function statusFilterClause(hasStatus, scope) {
+  if (!hasStatus) return '';
+  if (scope === 'finalized') return " AND d.status = 'finalized'";
+  if (scope === 'resumable') return " AND (d.status IS NULL OR d.status != 'finalized')";
+  return '';
+}
+
+function notFinalizedClause(hasStatus, alias = 'd') {
+  if (!hasStatus) return '';
+  return ` AND (${alias}.status IS NULL OR ${alias}.status != 'finalized')`;
 }
 
 async function getDataset(userId, datasetId) {
@@ -198,6 +227,13 @@ async function getDataset(userId, datasetId) {
   return normalizeDataset(rows[0]);
 }
 
+async function deleteDataset(userId, datasetId) {
+  const meta = await getDataset(userId, datasetId);
+  if (!meta) return null;
+  await query('DELETE FROM datasets WHERE id = ? AND user_id = ?', [datasetId, userId]);
+  return meta;
+}
+
 async function updateStoragePath(datasetId, storagePath) {
   if (await hasColumn('datasets', 'storage_path')) {
     await query('UPDATE datasets SET storage_path = ? WHERE id = ?', [storagePath, datasetId]);
@@ -205,15 +241,33 @@ async function updateStoragePath(datasetId, storagePath) {
 }
 
 async function getActiveDataset(userId) {
+  const hasStatus = await hasColumn('datasets', 'status');
+  const skipFinalized = notFinalizedClause(hasStatus);
+
   if (await hasColumn('datasets', 'is_active')) {
     const rows = await query(
-      'SELECT * FROM datasets WHERE user_id = ? AND is_active = 1 ORDER BY uploaded_at DESC LIMIT 1',
+      `SELECT * FROM datasets WHERE user_id = ? AND is_active = 1${skipFinalized.replace(/d\./g, '')} ORDER BY uploaded_at DESC LIMIT 1`,
       [userId],
     );
     if (rows[0]) return normalizeDataset(rows[0]);
   }
+
+  // Resume in-progress work even if is_active was cleared (e.g. after re-login).
+  const inProgress = await query(
+    `SELECT d.*
+     FROM datasets d
+     INNER JOIN pipelines p ON p.dataset_id = d.id
+     INNER JOIN pipeline_steps ps ON ps.pipeline_id = p.id
+     WHERE d.user_id = ?${notFinalizedClause(hasStatus)}
+     GROUP BY d.id
+     ORDER BY MAX(ps.created_at) DESC, d.uploaded_at DESC
+     LIMIT 1`,
+    [userId],
+  );
+  if (inProgress[0]) return normalizeDataset(inProgress[0]);
+
   const fallback = await query(
-    'SELECT * FROM datasets WHERE user_id = ? ORDER BY uploaded_at DESC LIMIT 1',
+    `SELECT * FROM datasets WHERE user_id = ?${skipFinalized.replace(/d\./g, '')} ORDER BY uploaded_at DESC LIMIT 1`,
     [userId],
   );
   return normalizeDataset(fallback[0]);
@@ -227,7 +281,7 @@ async function activateDataset(userId, datasetId) {
   ]);
 }
 
-async function listDatasets(userId) {
+async function listDatasets(userId, scope = 'resumable') {
   const nameCol = (await hasColumn('datasets', 'original_filename'))
     ? 'original_filename'
     : 'original_name';
@@ -235,22 +289,34 @@ async function listDatasets(userId) {
   const colsCol = (await hasColumn('datasets', 'total_columns'))
     ? 'total_columns'
     : 'columns_count';
-  const activeCol = (await hasColumn('datasets', 'is_active'))
-    ? 'is_active AS isActive'
-    : 'FALSE AS isActive';
-  const statusCol = (await hasColumn('datasets', 'status'))
-    ? 'status'
-    : "'uploaded' AS status";
+  const hasActive = await hasColumn('datasets', 'is_active');
+  const hasStatus = await hasColumn('datasets', 'status');
+  const activeSelect = hasActive ? 'd.is_active AS isActive' : 'FALSE AS isActive';
+  const statusSelect = hasStatus ? 'd.status' : "'uploaded' AS status";
+  const orderBy = hasActive
+    ? 'd.is_active DESC, d.uploaded_at DESC'
+    : 'd.uploaded_at DESC';
+  const statusFilter = statusFilterClause(hasStatus, scope);
 
   const rows = await query(
-    `SELECT id, ${nameCol} AS name, mime, size, ${rowsCol} AS rows,
-      ${colsCol} AS columns, ${activeCol}, ${statusCol}, uploaded_at AS uploadedAt
-     FROM datasets WHERE user_id = ? ORDER BY uploaded_at DESC`,
+    `SELECT d.id, d.${nameCol} AS name, d.mime, d.size,
+      d.${rowsCol} AS \`rows\`,
+      d.${colsCol} AS columns,
+      ${activeSelect},
+      ${statusSelect},
+      d.uploaded_at AS uploadedAt,
+      (SELECT COUNT(*) FROM pipeline_steps ps
+        INNER JOIN pipelines p ON p.id = ps.pipeline_id
+        WHERE p.dataset_id = d.id) AS cleaningSteps
+     FROM datasets d
+     WHERE d.user_id = ?${statusFilter}
+     ORDER BY ${orderBy}`,
     [userId],
   );
   return rows.map((row) => ({
     ...row,
     isActive: row.isActive === 1 || row.isActive === true,
+    cleaningSteps: Number(row.cleaningSteps) || 0,
   }));
 }
 
@@ -310,6 +376,7 @@ module.exports = {
   updateDatasetMeta,
   updateStoragePath,
   getDataset,
+  deleteDataset,
   getActiveDataset,
   activateDataset,
   listDatasets,
@@ -318,5 +385,7 @@ module.exports = {
   saveStep,
   deleteLastStep,
   finalizeDatasetRecord,
+  reopenDatasetRecord,
+  deactivateDataset,
   isFinalized,
 };

@@ -15,9 +15,11 @@
 
   z-index: 1000;
 
-  overflow: hidden;
+  overflow: visible;
 
   isolation: isolate;
+
+  transition: transform 0.35s ease, opacity 0.35s ease;
 
   border-radius: 24px;
 
@@ -45,7 +47,11 @@
     inset 0 -1px 0 rgba(255,255,255,0.03);
 }
 
-
+.headerHidden {
+  transform: translateX(-50%) translateY(calc(-100% - 24px));
+  opacity: 0;
+  pointer-events: none;
+}
 
 .header::after {
   content: "";
@@ -166,10 +172,12 @@
 
 .actions {
   position: relative;
+  z-index: 1100;
   display: flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  overflow: visible;
 }
 
 .profileButton {
@@ -207,15 +215,15 @@
 
 .accountMenu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 12px);
   right: 0;
   min-width: 220px;
   padding: 12px;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.1);
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
-  z-index: 1100;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  z-index: 1200;
 }
 
 .accountMeta {
@@ -336,6 +344,72 @@
   font-weight: 600;
   color: #334155;
   cursor: pointer;
+}
+
+.collapseHeaderBtn {
+  position: fixed;
+  top: 88px;
+  left: 50%;
+  z-index: 1001;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  background: linear-gradient(180deg, rgba(17, 18, 35, 0.95), rgba(10, 10, 20, 0.9));
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-6px);
+  transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s ease;
+}
+
+.collapseHeaderBtnVisible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.collapseHeaderBtn:hover {
+  background: rgba(139, 92, 246, 0.28);
+  color: #fff;
+}
+
+.restoreHeaderBtn {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  z-index: 1001;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: none;
+  border-radius: 12px 0 0 12px;
+  background: linear-gradient(90deg, rgba(17, 18, 35, 0.95), rgba(10, 10, 20, 0.88));
+  color: rgba(255, 255, 255, 0.9);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background 0.2s ease, width 0.2s ease;
+}
+
+.restoreHeaderBtn:hover {
+  width: 42px;
+  background: rgba(139, 92, 246, 0.3);
+  color: #fff;
+}
+
+.controlIcon {
+  width: 16px;
+  height: 16px;
 }
 
 @media (max-width: 1024px) {

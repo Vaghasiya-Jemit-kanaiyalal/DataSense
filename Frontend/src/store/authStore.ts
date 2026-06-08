@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { clearActiveDatasetId } from '@/services/data';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api';
@@ -141,6 +142,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         setTokenCookie(null);
+        clearActiveDatasetId();
         set({
           user: null,
           accessToken: null,

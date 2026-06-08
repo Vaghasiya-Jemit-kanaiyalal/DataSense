@@ -6,7 +6,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <>
       <AppHeader variant="auth" />
-      <main style={{ paddingTop: '68px' }}>{children}</main>
+      <main className="app-main">{children}</main>
     </>
   );
 }

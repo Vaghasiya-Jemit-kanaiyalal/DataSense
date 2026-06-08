@@ -10,6 +10,8 @@
    1. CSS Custom Properties (Design Tokens)
    ============================================ */
 :root {
+  --app-header-offset: 83px;
+
   /* —— Colors: Backgrounds —— */
   --bg-darkest: #06060a;
   --bg-dark: #0a0a12;
@@ -131,6 +133,11 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+.app-main {
+  padding-top: var(--app-header-offset);
+  transition: padding-top 0.35s ease;
 }
 
 html {
