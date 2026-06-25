@@ -17,8 +17,6 @@
 }
 
 .header {
-  position: sticky;
-  top: 68px;
   z-index: 50;
   background: linear-gradient(to bottom, var(--bg-darkest), transparent);
   backdrop-filter: blur(8px);
@@ -36,6 +34,18 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-8);
+}
+
+.headerLeftSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.headerArt {
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .headerTitle {
@@ -143,4 +153,58 @@
     margin: -12px -16px 32px -16px;
     padding: 0 16px 16px;
   }
+}
+
+/* PDF Print Mode Styles */
+.pdfMode {
+  /* Override dark mode variables with light mode variables for PDF */
+  --bg-darkest: #ffffff;
+  --bg-darker: #f8fafc;
+  --bg-dark: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-surface: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border-subtle: #e2e8f0;
+  --border-hover: #cbd5e1;
+  --border-primary: #94a3b8;
+  background-color: var(--bg-darkest);
+  color: var(--text-primary);
+  padding: 40px;
+}
+
+.pdfMode .noPrint {
+  display: none !important;
+}
+
+.pdfTitle {
+  display: none;
+}
+
+.pdfMode .pdfTitle {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.pdfMode .pdfSubtitle {
+  display: block;
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.pdfMode .pdfDatasetName {
+  display: block;
+  font-size: 14px;
+  color: var(--primary);
+  font-weight: 500;
+  margin-bottom: 8px;
+  text-align: center;
 }

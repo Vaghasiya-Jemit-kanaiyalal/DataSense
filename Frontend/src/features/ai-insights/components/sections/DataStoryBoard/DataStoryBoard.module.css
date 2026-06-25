@@ -1,0 +1,59 @@
+.section {
+  margin-bottom: var(--space-12);
+}
+
+.card {
+  background: var(--bg-dark);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), #a78bfa, var(--primary));
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.icon {
+  font-size: 28px;
+}
+
+.title {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.content {
+  font-size: var(--text-lg);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.content p {
+  margin-bottom: var(--space-4);
+}
+
+.content p:last-child {
+  margin-bottom: 0;
+}
+
+.highlight {
+  color: var(--primary);
+  font-weight: 600;
+}

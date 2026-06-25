@@ -6,6 +6,7 @@ import {
   getPreview,
   resumeActiveDataset,
   setActiveDatasetId,
+  getDatasetName,
   type DatasetPayload,
 } from '@/services/data';
 import styles from './PreviewPanel.module.css';
@@ -32,7 +33,7 @@ export default function PreviewPanel() {
     try {
       const data = await getPreview(id, rows, pageNum);
       setPayload(data);
-      setActiveDatasetId(id);
+      setActiveDatasetId(id, data.original_filename);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load preview');
     } finally {
@@ -55,8 +56,9 @@ export default function PreviewPanel() {
   }, [queryId, router]);
 
   useEffect(() => {
-    if (!datasetId) return;
-    fetchPage(datasetId, page, pageSize);
+    if (datasetId != null) {
+      fetchPage(datasetId, page, pageSize);
+    }
   }, [datasetId, page, pageSize, fetchPage]);
 
   const totalRows = payload?.rows ?? 0;

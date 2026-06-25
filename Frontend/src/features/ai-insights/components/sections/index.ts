@@ -1,9 +1,10 @@
 export { default as ExecutiveSummary } from './ExecutiveSummary/ExecutiveSummary';
 export { default as QuickInsightCards } from './QuickInsightCards/QuickInsightCards';
-export { default as AIRecommendations } from './AIRecommendations/AIRecommendations';
+export { default as ComprehensiveDataSummary } from './ComprehensiveDataSummary/ComprehensiveDataSummary';
 export { default as FeatureImportanceAnalysis } from './FeatureImportanceAnalysis/FeatureImportanceAnalysis';
 export { default as AnomalyDetectionReport } from './AnomalyDetectionReport/AnomalyDetectionReport';
 export { default as BusinessRiskAssessment } from './BusinessRiskAssessment/BusinessRiskAssessment';
 export { default as AInarrativeReport } from './AInarrativeReport/AInarrativeReport';
+export { default as DataStoryBoard } from './DataStoryBoard/DataStoryBoard';
 export { default as ProcessingSummary } from './ProcessingSummary/ProcessingSummary';
 export { default as ExportReportSection } from './ExportReportSection/ExportReportSection';

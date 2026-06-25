@@ -13,6 +13,7 @@ import {
   getPreview,
   resumeActiveDataset,
   setActiveDatasetId,
+  getDatasetName,
   undoStep,
   type DatasetPayload,
   type PipelineStepInfo,
@@ -61,7 +62,7 @@ export default function CleaningPanel() {
   const applyPayload = (data: DatasetPayload) => {
     setPayload(data);
     setStepHistory(data.pipeline_steps ?? []);
-    setActiveDatasetId(data.dataset_id);
+    setActiveDatasetId(data.dataset_id, data.original_filename);
     setResolvedId(data.dataset_id);
   };
 
@@ -202,7 +203,7 @@ export default function CleaningPanel() {
                   <h1 className={styles.headerTitle}>Data Cleaning Studio</h1>
                   <p className={styles.headerMeta}>
                     Inspect, transform, and prepare your dataset
-                    {datasetId ? ` · Dataset #${datasetId}` : ''}
+                    {datasetId ? ` · ${payload?.original_filename || getDatasetName(datasetId)}` : ''}
                     {loading ? ' · processing…' : ''}
                   </p>
                 </div>
