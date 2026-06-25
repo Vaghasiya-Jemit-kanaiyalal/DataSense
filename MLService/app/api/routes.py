@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
+from app.analysis.analyzer import analyze_dataset
 from app.data import loader, preview, stats, store
 from app.preprocessings.Preprocessing_pipeline import PreprocessingPipeline
 
@@ -65,6 +66,20 @@ async def preprocess_dataset(body: PreprocessRequest):
             body.preview_rows,
             max(0, body.offset),
         )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/analyze")
+async def analyze(body: PreprocessRequest):
+    try:
+        df = store.get(body.user_id, body.dataset_id)
+        if body.steps:
+            df = PreprocessingPipeline.run(df, body.steps)
+        result = analyze_dataset(body.user_id, body.dataset_id, df)
+        return {"dataset_id": body.dataset_id, **result}
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:
