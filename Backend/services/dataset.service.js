@@ -220,10 +220,11 @@ function notFinalizedClause(hasStatus, alias = 'd') {
 }
 
 async function getDataset(userId, datasetId) {
-  const rows = await query(
-    'SELECT * FROM datasets WHERE id = ? AND user_id = ?',
-    [datasetId, userId],
-  );
+  const sql = userId
+    ? 'SELECT * FROM datasets WHERE id = ? AND user_id = ?'
+    : 'SELECT * FROM datasets WHERE id = ?';
+  const params = userId ? [datasetId, userId] : [datasetId];
+  const rows = await query(sql, params);
   return normalizeDataset(rows[0]);
 }
 
