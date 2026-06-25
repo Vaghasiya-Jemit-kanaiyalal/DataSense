@@ -29,6 +29,17 @@ async function attachPipelineMeta(datasetService, datasetId, mlPayload, meta = n
   const steps = pipeline ? await datasetService.getSteps(pipeline.id) : [];
   const status = meta?.status || 'uploaded';
   const finalized = status === 'finalized' || pipeline?.status === 'finalized';
+
+  let original_filename = meta?.original_filename;
+  if (!original_filename) {
+    try {
+      const dbMeta = await datasetService.getDataset(null, datasetId);
+      original_filename = dbMeta?.original_filename;
+    } catch (err) {
+      console.error('Error fetching dataset in attachPipelineMeta:', err);
+    }
+  }
+
   return {
     ...mlPayload,
     dataset_id: mlPayload.dataset_id ?? datasetId,
@@ -37,6 +48,7 @@ async function attachPipelineMeta(datasetService, datasetId, mlPayload, meta = n
     status,
     finalized,
     pipeline_locked: finalized,
+    original_filename: original_filename || mlPayload.original_filename || '',
   };
 }
 
