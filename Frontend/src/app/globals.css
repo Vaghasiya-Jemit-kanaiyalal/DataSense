@@ -136,6 +136,10 @@
 }
 
 .app-main {
+  padding-top: 0;
+}
+
+.app-main > :first-child {
   padding-top: var(--app-header-offset);
   transition: padding-top 0.35s ease;
 }

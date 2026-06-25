@@ -23,10 +23,22 @@ import styles from './UploadPanel.module.css';
 type DatasetRow = DatasetListItem;
 
 function fileTypeLabel(dataset: DatasetRow): string {
-  const fromMime = dataset.mime?.split('/')?.[1]?.toUpperCase();
-  if (fromMime) return fromMime;
-  const ext = dataset.name.split('.').pop()?.toUpperCase();
-  return ext ?? 'FILE';
+  const ext = dataset.name.split('.').pop()?.toLowerCase();
+  if (ext) {
+    if (ext === 'xlsx') return 'XLSX';
+    if (ext === 'xls') return 'XLS';
+    if (ext === 'csv') return 'CSV';
+    if (ext === 'json') return 'JSON';
+    return ext.toUpperCase();
+  }
+  const fromMime = dataset.mime?.split('/')?.[1]?.toLowerCase();
+  if (fromMime) {
+    if (fromMime.includes('spreadsheetml') || fromMime.includes('excel')) return 'XLSX';
+    if (fromMime === 'csv') return 'CSV';
+    if (fromMime === 'json') return 'JSON';
+    return fromMime.toUpperCase();
+  }
+  return 'FILE';
 }
 
 function formatFileSize(bytes?: number): string {
@@ -83,9 +95,22 @@ function mergeResumeIntoList(list: DatasetRow[], resume: DatasetPayload): Datase
   return [resumeRow, ...list.map((d) => ({ ...d, isActive: false }))];
 }
 
+function humanMimeType(mime?: string, name?: string): string {
+  if (!mime) {
+    const ext = name?.split('.').pop()?.toUpperCase();
+    return ext ? `${ext} File` : 'File';
+  }
+  const lowMime = mime.toLowerCase();
+  if (lowMime.includes('spreadsheetml') || lowMime.includes('excel')) return 'Excel Spreadsheet';
+  if (lowMime.includes('csv')) return 'CSV File';
+  if (lowMime.includes('json')) return 'JSON File';
+  const ext = name?.split('.').pop()?.toUpperCase();
+  return ext ? `${ext} File` : 'File';
+}
+
 function buildDatasetMeta(dataset: DatasetRow): string {
   const parts: string[] = [];
-  if (dataset.mime) parts.push(dataset.mime);
+  parts.push(humanMimeType(dataset.mime, dataset.name));
   if (dataset.size) parts.push(formatFileSize(dataset.size));
   if (dataset.uploadedAt) parts.push(formatUploadedAt(dataset.uploadedAt));
   if (dataset.cleaningSteps && dataset.cleaningSteps > 0) {
