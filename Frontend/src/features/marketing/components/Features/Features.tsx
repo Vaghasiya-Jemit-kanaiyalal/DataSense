@@ -112,15 +112,15 @@ const features: Feature[] = [
   },
   {
     icon: <CubeIcon />,
-    title: 'Model Explorer',
+    title: 'Predictions',
     description:
-      'Train and evaluate models with built-in algorithms and metrics.',
+      'Generate accurate projections and forecasts using machine learning.',
   },
   {
     icon: <SlidersIcon />,
-    title: 'Model Tuning',
+    title: 'Visualization',
     description:
-      'Fine-tune parameters and improve performance automatically.',
+      'Build customizable charts to visualize distributions, trends, and relationships.',
   },
   {
     icon: <DownloadIcon />,

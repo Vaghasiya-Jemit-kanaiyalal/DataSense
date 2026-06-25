@@ -72,14 +72,26 @@ export default function AppHeader({ variant = 'full' }: AppHeaderProps) {
     return () => document.removeEventListener('mousedown', onDocClick);
   }, []);
 
+  const lastScrollY = useRef(0);
+
   useEffect(() => {
     const onScroll = () => {
-      setScrolled(window.scrollY > SCROLL_SHOW_HIDE_THRESHOLD);
+      const currentScrollY = window.scrollY;
+      setScrolled(currentScrollY > SCROLL_SHOW_HIDE_THRESHOLD);
+
+      // Reappear if manually hidden, user is scrolling up, and reaches the header region (<= SCROLL_SHOW_HIDE_THRESHOLD)
+      if (headerHidden && currentScrollY < lastScrollY.current && currentScrollY <= SCROLL_SHOW_HIDE_THRESHOLD) {
+        setHeaderHidden(false);
+      }
+
+      lastScrollY.current = currentScrollY;
     };
+
+    lastScrollY.current = window.scrollY;
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [headerHidden]);
 
   useEffect(() => {
     document.documentElement.style.setProperty(

@@ -343,14 +343,7 @@ export default function CleaningPanel() {
                       runClean({ action: 'missing_values', strategy: 'mean', columns: [selectedColumn] })
                     }
                   />
-                  <ActionBtn
-                    tone="purple"
-                    icon="imbalance"
-                    title="Handle Imbalance"
-                    hint="Coming soon"
-                    disabled
-                    onClick={() => undefined}
-                  />
+
                   <ActionBtn
                     tone="red"
                     icon="outliers"
@@ -373,14 +366,7 @@ export default function CleaningPanel() {
                       runClean({ action: 'encoding', strategy: 'label', columns: [selectedColumn] })
                     }
                   />
-                  <ActionBtn
-                    tone="blue"
-                    icon="scale"
-                    title="Feature Scaling"
-                    hint="Coming soon"
-                    disabled
-                    onClick={() => undefined}
-                  />
+
                 </div>
               </article>
 

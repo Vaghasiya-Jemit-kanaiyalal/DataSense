@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import aiInsightImg from '@/assets/ai_isngiht.jpg';
+import aiInsightImg from '@/assets/ai_isngiht.png';
 import { useAuthHydrated } from '@/hooks';
 import {
   getPreview,
@@ -128,7 +128,7 @@ export default function AIInsightsPanel() {
       <div className={styles.page}>
         <div className={styles.container}>
           <p className={styles.muted}>Upload and clean a dataset first to generate AI insights.</p>
-          <button type="button" className={styles.primaryBtn} onClick={() => router.push('/upload')}>
+          <button type="button" className={styles.btnPrimary} onClick={() => router.push('/upload')}>
             Go to Upload
           </button>
         </div>
@@ -139,41 +139,36 @@ export default function AIInsightsPanel() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        {/* Sticky Header */}
-        <header className={styles.header}>
-          <div className={styles.headerContent}>
-            <div className={styles.headerLeftSection}>
-              <Image
-                src={aiInsightImg}
-                alt=""
-                width={80}
-                height={80}
-                className={styles.headerArt}
-                priority
-              />
-              <div>
-                <h1 className={styles.headerTitle}>AI Insights</h1>
-                <p className={styles.headerSubtitle}>
-                  AI-generated business intelligence from your dataset
-                  {payload?.original_filename ? ` · ${payload.original_filename}` : (datasetId ? ` · ${getDatasetName(datasetId)}` : '')}
-                </p>
-              </div>
-            </div>
-            <div className={styles.headerActions}>
+        {/* Hero Header Section */}
+        <section className={`${styles.hero} ${styles.noPrint}`}>
+          <div className={styles.heroLeft}>
+            <span className={styles.kicker}>AI-Powered Insights</span>
+            <h1 className={styles.heroTitle}>AI Insights</h1>
+            <p className={styles.heroDesc}>
+              View automatically generated business intelligence, trends, anomalies, and key features. Download a structured PDF report of your analysis.
+              {payload?.original_filename ? ` · ${payload.original_filename}` : (datasetId ? ` · ${getDatasetName(datasetId)}` : '')}
+            </p>
+            <div className={styles.heroActions}>
               <button
                 type="button"
-                className={styles.primaryBtn}
+                className={styles.btnPrimary}
                 onClick={handleGeneratePDF}
                 disabled={loading || isGeneratingPDF}
               >
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path d="M2 4h12M2 8h12M2 12h6" stroke="currentColor" strokeWidth="1.2" fill="none" />
+                <svg viewBox="0 0 16 16" aria-hidden="true" style={{ width: 14, height: 14, fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, marginRight: 4 }}>
+                  <path d="M2 4h12M2 8h12M2 12h6" />
                 </svg>
                 {isGeneratingPDF ? 'Generating...' : 'Generate Report'}
               </button>
             </div>
           </div>
-        </header>
+          <Image
+            src={aiInsightImg}
+            alt="AI Insights illustration"
+            className={styles.heroArt}
+            priority
+          />
+        </section>
 
         {error && <p className={styles.errorBanner} role="alert">{error}</p>}
 

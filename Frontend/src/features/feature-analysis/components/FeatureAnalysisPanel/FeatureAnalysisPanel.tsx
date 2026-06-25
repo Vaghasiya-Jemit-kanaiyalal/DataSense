@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import featureAnalysisImg from '@/assets/feature-analysis.jpg';
-import logoImg from '@/assets/logo.png';
 import { ROUTES } from '@/constants/routes';
 import { useAuthHydrated } from '@/hooks';
 import {
@@ -366,28 +365,6 @@ export default function FeatureAnalysisPanel() {
                           {check.label}
                         </div>
                       ))}
-                    </div>
-                    <div className={styles.readinessCta}>
-                      <p>
-                        {analysis.readinessScore >= 80
-                          ? 'Your dataset is ready for AI-powered insights.'
-                          : 'Clean and enrich your dataset to improve ML readiness.'}
-                      </p>
-                      <button
-                        type="button"
-                        className={styles.btnInsights}
-                        onClick={() => router.push(ROUTES.AI_INSIGHTS)}
-                      >
-                        <Image
-                          src={logoImg}
-                          alt=""
-                          width={88}
-                          height={24}
-                          className={styles.btnInsightsLogo}
-                          aria-hidden
-                        />
-                        Open AI Insights →
-                      </button>
                     </div>
                   </div>
                 </div>

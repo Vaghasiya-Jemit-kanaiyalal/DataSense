@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthHydrated } from '@/hooks';
@@ -56,6 +56,11 @@ export default function VisualizationPanel() {
   const [colY, setColY] = useState<string>('');
   const [chartSeries, setChartSeries] = useState<ChartSeries | null>(null);
   const [generated, setGenerated] = useState(false);
+  const outputRef = useRef<HTMLElement>(null);
+
+  const scrollToOutput = () => {
+    outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const datasetId = useMemo(() => {
     if (queryId) return Number(queryId);
@@ -151,7 +156,7 @@ export default function VisualizationPanel() {
       <div className={styles.page}>
         <div className={styles.container}>
           <p className={styles.muted}>Upload and clean a dataset first, then visualize it here.</p>
-          <button type="button" className={styles.generateBtn} onClick={() => router.push('/upload')}>
+          <button type="button" className={styles.btnPrimary} onClick={() => router.push('/upload')}>
             Go to Upload
           </button>
         </div>
@@ -162,29 +167,41 @@ export default function VisualizationPanel() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        {error && <p className={styles.errorBanner} role="alert">{error}</p>}
-
-        <header className={styles.header}>
-          <div className={styles.headerContent}>
-            <div className={styles.headerLeftSection}>
-              <Image
-                src={visualizationImg}
-                alt=""
-                width={80}
-                height={80}
-                className={styles.headerArt}
-                priority
-              />
-              <div>
-                <h1 className={styles.headerTitle}>Data Visualization</h1>
-                <p className={styles.headerSubtitle}>
-                  Analyze and plot columns from your dataset
-                  {payload?.original_filename ? ` · ${payload.original_filename}` : (datasetId ? ` · ${getDatasetName(datasetId)}` : '')}
-                </p>
-              </div>
+        <section className={styles.hero}>
+          <div className={styles.heroLeft}>
+            <span className={styles.kicker}>Interactive Explorer</span>
+            <h1 className={styles.heroTitle}>Data Visualization</h1>
+            <p className={styles.heroDesc}>
+              Analyze, plot, and discover insights from your columns. Build customized charts to understand distributions, trends, and relationships.
+              {payload?.original_filename ? ` · ${payload.original_filename}` : (datasetId ? ` · ${getDatasetName(datasetId)}` : '')}
+            </p>
+            <div className={styles.heroActions}>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                disabled={loading || !payload}
+                onClick={() => {
+                  generateChart();
+                  setTimeout(scrollToOutput, 100);
+                }}
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true" style={{ width: 14, height: 14, fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, marginRight: 4 }}>
+                  <path d="M2 12V4l6 4 6-4v8H2z" />
+                </svg>
+                Generate Chart
+              </button>
+              <button type="button" className={styles.btnSecondary} onClick={scrollToOutput}>
+                View Chart Output
+              </button>
             </div>
           </div>
-        </header>
+          <Image
+            src={visualizationImg}
+            alt="Visualization illustration"
+            className={styles.heroArt}
+            priority
+          />
+        </section>
 
         <div className={styles.layout}>
           <aside className={styles.sidebar}>
@@ -194,7 +211,7 @@ export default function VisualizationPanel() {
               columns={allColumns}
               value={colX}
               detectedType={modeX}
-              onColumn={(name) => { setColX(name); setGenerated(false); }}
+              onColumn={(name) => { setColX(name); setGenerated(false); setError(null); }}
             />
             <ColumnPicker
               title="Column - Y"
@@ -202,7 +219,7 @@ export default function VisualizationPanel() {
               columns={allColumns}
               value={colY}
               detectedType={modeY}
-              onColumn={(name) => { setColY(name); setGenerated(false); }}
+              onColumn={(name) => { setColY(name); setGenerated(false); setError(null); }}
             />
           </aside>
 
@@ -218,7 +235,7 @@ export default function VisualizationPanel() {
                     key={chart.id}
                     type="button"
                     className={`${styles.chartCard} ${chartType === chart.id ? styles.chartCardActive : ''} ${styles[chart.accent]}`}
-                    onClick={() => { setChartType(chart.id); setGenerated(false); }}
+                    onClick={() => { setChartType(chart.id); setGenerated(false); setError(null); }}
                   >
                     {chartType === chart.id && (
                       <span className={styles.checkmark} aria-hidden="true">✓</span>
@@ -231,42 +248,50 @@ export default function VisualizationPanel() {
               </div>
             </section>
 
-            <section className={styles.output}>
-              <div className={styles.outputHeader}>
-                <h2>Chart Output</h2>
-                <button
-                  type="button"
-                  className={styles.generateBtn}
-                  disabled={loading || !payload}
-                  onClick={generateChart}
-                >
-                  <svg viewBox="0 0 16 16" aria-hidden="true">
-                    <path d="M2 12V4l6 4 6-4v8H2z" stroke="currentColor" strokeWidth="1.2" fill="none" />
-                  </svg>
-                  Generate Chart
-                </button>
-              </div>
-              <div className={styles.outputBody}>
-                {loading && <p className={styles.muted}>Loading dataset…</p>}
-                {!loading && generated && chartSeries && (
-                  <ChartCanvas
-                    chartType={chartType}
-                    series={chartSeries}
-                    xLabel={colX}
-                    yLabel={colY}
-                  />
-                )}
-                {!loading && !generated && (
-                  <div className={styles.placeholder}>
-                    <div className={styles.placeholderIcon} aria-hidden="true" />
-                    <strong>Your visualization will appear here</strong>
-                    <p>Configure the columns above and select a chart type to generate your visualization.</p>
-                  </div>
-                )}
-              </div>
-            </section>
           </div>
         </div>
+
+        <section className={styles.output} ref={outputRef}>
+          <div className={styles.outputHeader}>
+            <h2>Chart Output</h2>
+            <button
+              type="button"
+              className={styles.generateBtn}
+              disabled={loading || !payload}
+              onClick={generateChart}
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M2 12V4l6 4 6-4v8H2z" stroke="currentColor" strokeWidth="1.2" fill="none" />
+              </svg>
+              Generate Chart
+            </button>
+          </div>
+          <div className={styles.outputBody}>
+            {loading && <p className={styles.muted}>Loading dataset…</p>}
+            {!loading && error && (
+              <div className={styles.errorState}>
+                <div className={styles.errorIcon} aria-hidden="true" />
+                <strong>Cannot Generate Chart</strong>
+                <p className={styles.errorText}>{error}</p>
+              </div>
+            )}
+            {!loading && !error && generated && chartSeries && (
+              <ChartCanvas
+                chartType={chartType}
+                series={chartSeries}
+                xLabel={colX}
+                yLabel={colY}
+              />
+            )}
+            {!loading && !error && !generated && (
+              <div className={styles.placeholder}>
+                <div className={styles.placeholderIcon} aria-hidden="true" />
+                <strong>Your visualization will appear here</strong>
+                <p>Configure the columns above and select a chart type to generate your visualization.</p>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );
