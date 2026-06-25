@@ -55,4 +55,23 @@ async function preprocessDataset({
   return data;
 }
 
-module.exports = { uploadDataset, preprocessDataset };
+async function analyzeDataset({ userId, datasetId, steps = [] }) {
+  const res = await fetch(`${ML_BASE}/data/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: userId,
+      dataset_id: datasetId,
+      steps,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(formatMlError(data) || 'ML analysis failed');
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+module.exports = { uploadDataset, preprocessDataset, analyzeDataset };

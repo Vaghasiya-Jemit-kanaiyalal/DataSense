@@ -12,6 +12,7 @@ const {
   reopenDataset,
   deleteDatasetHandler,
   finalizeDataset,
+  analyzeDatasetHandler,
 } = require('../controllers/dataController');
 
 router.post('/upload', verifyToken, ...uploadFile);
@@ -22,6 +23,7 @@ router.post('/:id/activate', verifyToken, activateDataset);
 router.get('/active', verifyToken, getActive);
 router.get('/preview/:id', verifyToken, previewFile);
 router.post('/clean', verifyToken, cleanDataset);
+router.get('/:datasetId/analyze', verifyToken, analyzeDatasetHandler);
 router.post('/:datasetId/undo', verifyToken, undoStep);
 router.post('/:datasetId/finalize', verifyToken, finalizeDataset);
 
