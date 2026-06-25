@@ -35,6 +35,7 @@ const FULL_NAV_ITEMS: NavItem[] = [
   { label: 'Visualization', href: ROUTES.VISUALIZATION },
   { label: 'Feature Analysis', href: ROUTES.FEATURE_ANALYSIS },
   { label: 'AI Insights', href: ROUTES.AI_INSIGHTS },
+  { label: 'Predictions', href: ROUTES.PREDICTIONS },
 ];
 
 const AUTH_NAV_ITEMS: NavItem[] = [{ label: 'Home', href: ROUTES.HOME }];

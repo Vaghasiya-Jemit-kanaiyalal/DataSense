@@ -17,6 +17,7 @@ export const ROUTES = {
   VISUALIZATION: '/visualization',
   AI_INSIGHTS: '/ai-insights',
   FEATURE_ANALYSIS: '/feature-analysis',
+  PREDICTIONS: '/predictions',
 } as const;
 
 export type Route = (typeof ROUTES)[keyof typeof ROUTES];

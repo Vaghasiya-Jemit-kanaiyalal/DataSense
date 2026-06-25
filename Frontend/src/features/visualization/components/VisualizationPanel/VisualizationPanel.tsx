@@ -1,12 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthHydrated } from '@/hooks';
+import visualizationImg from '@/assets/visulization.png';
 import {
   getPreview,
   resumeActiveDataset,
   setActiveDatasetId,
+  getDatasetName,
   type DatasetPayload,
 } from '@/services/data';
 import ChartCanvas from '../ChartCanvas/ChartCanvas';
@@ -80,7 +83,7 @@ export default function VisualizationPanel() {
     try {
       const data = await getPreview(id, VIZ_ROWS, 1);
       setPayload(data);
-      setActiveDatasetId(data.dataset_id);
+      setActiveDatasetId(data.dataset_id, data.original_filename);
       setResolvedId(data.dataset_id);
       const cols = [...data.categorical_columns, ...data.numerical_columns];
       if (cols[0]) setColX(cols[0]);
@@ -160,6 +163,28 @@ export default function VisualizationPanel() {
     <div className={styles.page}>
       <div className={styles.container}>
         {error && <p className={styles.errorBanner} role="alert">{error}</p>}
+
+        <header className={styles.header}>
+          <div className={styles.headerContent}>
+            <div className={styles.headerLeftSection}>
+              <Image
+                src={visualizationImg}
+                alt=""
+                width={80}
+                height={80}
+                className={styles.headerArt}
+                priority
+              />
+              <div>
+                <h1 className={styles.headerTitle}>Data Visualization</h1>
+                <p className={styles.headerSubtitle}>
+                  Analyze and plot columns from your dataset
+                  {payload?.original_filename ? ` · ${payload.original_filename}` : (datasetId ? ` · ${getDatasetName(datasetId)}` : '')}
+                </p>
+              </div>
+            </div>
+          </div>
+        </header>
 
         <div className={styles.layout}>
           <aside className={styles.sidebar}>

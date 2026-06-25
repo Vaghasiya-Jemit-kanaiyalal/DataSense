@@ -12,6 +12,7 @@ import {
   reopenFinalizedDataset,
   resumeActiveDataset,
   setActiveDatasetId,
+  getDatasetName,
   type DatasetListItem,
   type DatasetPayload,
 } from '@/services/data';
@@ -59,7 +60,7 @@ function mergeResumeIntoList(list: DatasetRow[], resume: DatasetPayload): Datase
   const cleaningSteps = resume.total_steps ?? resume.pipeline_steps?.length ?? 0;
   const resumeRow: DatasetRow = {
     id,
-    name: resume.original_filename ?? `Dataset #${id}`,
+    name: resume.original_filename ?? getDatasetName(id),
     rows: resume.rows,
     columns: resume.columns,
     isActive: true,
@@ -155,7 +156,7 @@ async function loadDatasetLists() {
 
   const resumed = await resumeActiveDataset();
   if (resumed?.dataset_id) {
-    setActiveDatasetId(resumed.dataset_id);
+    setActiveDatasetId(resumed.dataset_id, resumed.original_filename);
     list = mergeResumeIntoList(list, resumed);
   }
 
@@ -221,7 +222,8 @@ export default function UploadPanel() {
       try {
         setReopenError(null);
         await activateDataset(id);
-        setActiveDatasetId(id);
+        const dsName = datasets.find(d => d.id === id)?.name || finalizedDatasets.find(d => d.id === id)?.name;
+        setActiveDatasetId(id, dsName);
         router.push(`/${target}?datasetId=${id}`);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to open dataset';
@@ -287,7 +289,7 @@ export default function UploadPanel() {
       if (res.ok) {
         const uploaded = await res.json();
         if (uploaded?.dataset_id) {
-          setActiveDatasetId(uploaded.dataset_id);
+          setActiveDatasetId(uploaded.dataset_id, file.name);
           router.push(`/preview?datasetId=${uploaded.dataset_id}`);
           return;
         }

@@ -155,9 +155,12 @@ export async function deleteDataset(datasetId: number) {
   }
 }
 
-export function setActiveDatasetId(id: number) {
+export function setActiveDatasetId(id: number, filename?: string) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('activeDatasetId', String(id));
+    if (filename) {
+      localStorage.setItem(`dataset_name_${id}`, filename);
+    }
   }
 }
 
@@ -171,6 +174,14 @@ export function getActiveDatasetId(): number | null {
   if (typeof window === 'undefined') return null;
   const v = localStorage.getItem('activeDatasetId');
   return v ? Number(v) : null;
+}
+
+export function getDatasetName(id: number | null): string {
+  if (!id) return '';
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(`dataset_name_${id}`) || `Dataset #${id}`;
+  }
+  return `Dataset #${id}`;
 }
 
 export function isResumablePayload(payload: DatasetPayload): boolean {
@@ -200,7 +211,7 @@ export async function reopenFinalizedDataset(datasetId: number, file: File): Pro
     throw new Error(message);
   }
   const data = (await res.json()) as DatasetPayload;
-  setActiveDatasetId(datasetId);
+  setActiveDatasetId(datasetId, data.original_filename);
   return data;
 }
 
@@ -211,7 +222,7 @@ export async function resumeActiveDataset(): Promise<DatasetPayload | null> {
       clearActiveDatasetId();
       return null;
     }
-    setActiveDatasetId(data.dataset_id);
+    setActiveDatasetId(data.dataset_id, data.original_filename);
     return data;
   } catch {
     clearActiveDatasetId();
