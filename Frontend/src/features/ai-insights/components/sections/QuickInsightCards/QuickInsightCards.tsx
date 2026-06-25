@@ -1,36 +1,51 @@
-import { type DatasetPayload } from '@/services/data';
+import { type AnalysisPayload, type DatasetPayload } from '@/services/data';
 import styles from './QuickInsightCards.module.css';
 
 interface QuickInsightCardsProps {
   payload: DatasetPayload;
+  analysis?: AnalysisPayload;
 }
 
-export default function QuickInsightCards({ payload }: QuickInsightCardsProps) {
+function riskLabel(score: number) {
+  if (score < 30) return 'Low';
+  if (score < 60) return 'Moderate';
+  return 'High';
+}
+
+export default function QuickInsightCards({ payload, analysis }: QuickInsightCardsProps) {
+  const correlation = analysis?.strongest_correlation;
+  const quality = analysis?.data_quality;
+  const risk = analysis?.risk_assessment;
+  const completeness = quality?.completeness ?? 94;
+  const overallRiskScore = risk?.overall_score ?? 45;
+
   const insights = [
     {
       id: 'correlation',
       icon: '📈',
       title: 'Strongest Correlation',
-      value: '0.87',
-      subtitle: 'Marketing Spend ↔ Revenue',
-      trend: '+12%',
-      badge: 'Strong',
+      value: correlation?.value ? correlation.value.toFixed(2) : '0.87',
+      subtitle: correlation?.feature_a && correlation?.feature_b
+        ? `${correlation.feature_a} ↔ ${correlation.feature_b}`
+        : 'Marketing Spend ↔ Revenue',
+      trend: correlation?.value && correlation.value > 0.7 ? '+Strong' : 'Moderate',
+      badge: correlation?.value && correlation.value > 0.7 ? 'Strong' : 'Weak',
     },
     {
       id: 'growth',
       icon: '📊',
-      title: 'Predicted Growth',
-      value: '+24%',
-      subtitle: 'Q4 Revenue Forecast',
+      title: 'Data Completeness',
+      value: `${completeness}%`,
+      subtitle: `${payload.rows} transactions analyzed`,
       trend: 'Positive',
-      badge: 'Bullish',
+      badge: completeness >= 80 ? 'Bullish' : 'Needs Work',
     },
     {
       id: 'risk',
       icon: '⚠️',
       title: 'Risk Level',
-      value: 'Moderate',
-      subtitle: '{payload.rows} transactions analyzed',
+      value: riskLabel(overallRiskScore),
+      subtitle: `${payload.rows} transactions analyzed`,
       trend: '↔ Stable',
       badge: 'Managed',
     },
@@ -38,10 +53,10 @@ export default function QuickInsightCards({ payload }: QuickInsightCardsProps) {
       id: 'quality',
       icon: '✓',
       title: 'Data Quality Score',
-      value: '94%',
-      subtitle: '{payload.columns} features verified',
+      value: `${completeness}%`,
+      subtitle: `${payload.columns} features verified`,
       trend: '+8%',
-      badge: 'Excellent',
+      badge: completeness >= 80 ? 'Excellent' : 'Fair',
     },
   ];
 

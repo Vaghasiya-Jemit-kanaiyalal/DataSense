@@ -1,6 +1,21 @@
+import { type AnalysisPayload } from '@/services/data';
 import styles from './AInarrativeReport.module.css';
 
-export default function AInarrativeReport() {
+interface AInarrativeReportProps {
+  analysis?: AnalysisPayload;
+}
+
+export default function AInarrativeReport({ analysis }: AInarrativeReportProps) {
+  const narrative = analysis?.narrative ?? (
+    'This dataset contains financial records across multiple business units spanning the last 24 months. '
+    + 'Revenue growth is strongly influenced by marketing spend and customer acquisition, with a correlation '
+    + 'coefficient of 0.87—indicating a robust relationship between investment and outcomes. '
+    + 'Several anomalies have been detected in the transaction logs that warrant investigation.'
+  );
+  const confidence = analysis?.confidence_score ?? 87;
+
+  const paragraphs = narrative.split('.').filter(Boolean).map((p) => p.trim() + '.');
+
   return (
     <section className={styles.section}>
       <div className={styles.card}>
@@ -12,32 +27,9 @@ export default function AInarrativeReport() {
         </div>
 
         <div className={styles.content}>
-          <p>
-            This dataset contains financial records across multiple business units spanning the last 24 months. 
-            Revenue growth is strongly influenced by marketing spend and customer acquisition, with a correlation 
-            coefficient of 0.87—indicating a robust relationship between investment and outcomes.
-          </p>
-
-          <p>
-            Several anomalies have been detected in the transaction logs that warrant investigation. Specifically, 
-            18 records exhibit statistical properties outside the expected range, with 2 flagged as critical for 
-            immediate review. These may represent data entry errors, fraudulent activity, or legitimate edge cases 
-            requiring context.
-          </p>
-
-          <p>
-            Data quality improved significantly after preprocessing—missing values were imputed using mean 
-            substitution for numerical columns and mode substitution for categorical features. Outliers were 
-            capped at the 95th percentile to preserve data integrity while reducing noise. Overall, the dataset 
-            now exhibits 94% quality score with strong consistency across all features.
-          </p>
-
-          <p>
-            Operational metrics suggest the organization is well-positioned for growth, though moderate risk exists 
-            in three areas: revenue concentration, expense volatility, and customer churn. A targeted intervention 
-            strategy focusing on customer retention and cost optimization could significantly improve the risk profile 
-            while maintaining margin expansion.
-          </p>
+          {paragraphs.map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
         </div>
 
         <div className={styles.metadata}>
@@ -47,11 +39,11 @@ export default function AInarrativeReport() {
           </div>
           <div className={styles.metadataItem}>
             <span className={styles.label}>Model:</span>
-            <span className={styles.value}>DataSense AI v2.1</span>
+            <span className={styles.value}>DataSense ML Service</span>
           </div>
           <div className={styles.metadataItem}>
             <span className={styles.label}>Confidence:</span>
-            <span className={styles.value}>87%</span>
+            <span className={styles.value}>{confidence}%</span>
           </div>
         </div>
       </div>

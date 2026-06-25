@@ -71,9 +71,34 @@
 }
 
 .grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 8px; /* Slightly reduced gap since card wrappers have padding */
+}
+
+/* ── Sliding hover background highlight ── */
+.hoverHighlight {
+  position: absolute;
+  background: rgba(124, 58, 237, 0.08); /* Violet brand accent tint */
+  border: 1.5px solid rgba(124, 58, 237, 0.2);
+  border-radius: 20px;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.23, 1, 0.32, 1),
+              width 0.25s cubic-bezier(0.23, 1, 0.32, 1), height 0.25s cubic-bezier(0.23, 1, 0.32, 1),
+              left 0.25s cubic-bezier(0.23, 1, 0.32, 1), top 0.25s cubic-bezier(0.23, 1, 0.32, 1);
+  opacity: 0;
+  z-index: 1;
+  box-shadow: 0 8px 30px rgba(124, 58, 237, 0.05);
+}
+
+.cardWrapper {
+  position: relative;
+  padding: 8px;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 2;
 }
 
 .card {
@@ -83,13 +108,18 @@
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.1);
   background: rgba(11, 18, 32, 0.75);
-  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%;
+  position: relative;
+  z-index: 5;
+  transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
 }
 
-.card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(167, 139, 250, 0.25);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+.cardWrapper:hover .card {
+  border-color: rgba(167, 139, 250, 0.35); /* Glow border purple */
+  background: rgba(16, 22, 40, 0.85); /* Slightly lighter on hover */
+  transform: translateY(-2px); /* Premium micro-lift on hover */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .iconWrap {

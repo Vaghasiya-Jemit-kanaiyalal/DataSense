@@ -1,61 +1,15 @@
+import { type AnalysisPayload } from '@/services/data';
 import styles from './AnomalyDetectionReport.module.css';
 
-interface Anomaly {
-  id: string;
-  recordId: string;
-  metric: string;
-  actual: string;
-  expected: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
+interface AnomalyDetectionReportProps {
+  analysis?: AnalysisPayload;
 }
 
-export default function AnomalyDetectionReport() {
-  const totalAnomalies = 18;
-  const criticalIssues = 2;
-  const warningIssues = 5;
-
-  const anomalies: Anomaly[] = [
-    {
-      id: '1',
-      recordId: 'TXN-2024-0847',
-      metric: 'Transaction Amount',
-      actual: '$125,000',
-      expected: '$5,000 - $15,000',
-      severity: 'critical',
-    },
-    {
-      id: '2',
-      recordId: 'TXN-2024-0925',
-      metric: 'Customer Purchase Frequency',
-      actual: '52 transactions',
-      expected: '2 - 8 transactions',
-      severity: 'critical',
-    },
-    {
-      id: '3',
-      recordId: 'TXN-2024-1033',
-      metric: 'Regional Performance',
-      actual: '450% above average',
-      expected: '±15% variance',
-      severity: 'high',
-    },
-    {
-      id: '4',
-      recordId: 'TXN-2024-1156',
-      metric: 'Product Return Rate',
-      actual: '89%',
-      expected: '2 - 5%',
-      severity: 'high',
-    },
-    {
-      id: '5',
-      recordId: 'TXN-2024-1247',
-      metric: 'Customer Churn',
-      actual: 'Flagged',
-      expected: 'Active',
-      severity: 'medium',
-    },
-  ];
+export default function AnomalyDetectionReport({ analysis }: AnomalyDetectionReportProps) {
+  const anomalies = (analysis?.anomalies ?? []).slice(0, 10);
+  const totalAnomalies = analysis?.anomalies?.length ?? 18;
+  const criticalIssues = analysis?.anomalies?.filter((a) => a.severity === 'critical').length ?? 2;
+  const warningIssues = analysis?.anomalies?.filter((a) => a.severity === 'high').length ?? 5;
 
   return (
     <section className={styles.section}>
@@ -89,13 +43,13 @@ export default function AnomalyDetectionReport() {
         </div>
 
         <div className={styles.tableBody}>
-          {anomalies.map((anomaly) => (
-            <div key={anomaly.id} className={styles.tableRow}>
+          {anomalies.map((anomaly, i) => (
+            <div key={i} className={styles.tableRow}>
               <div className={styles.cell}>
-                <span className={styles.recordId}>{anomaly.recordId}</span>
+                <span className={styles.recordId}>Row #{anomaly.row_index}</span>
               </div>
               <div className={styles.cell}>
-                <span className={styles.metric}>{anomaly.metric}</span>
+                <span className={styles.metric}>{anomaly.column}</span>
               </div>
               <div className={styles.cell}>
                 <span className={styles.value}>{anomaly.actual}</span>
