@@ -466,6 +466,33 @@ const finalizeDataset = async (req, res) => {
   }
 };
 
+const analyzeDatasetHandler = async (req, res) => {
+  try {
+    await init();
+    const datasetId = Number(req.params.datasetId);
+    const meta = await datasetService.getDataset(req.user.id, datasetId);
+    if (!meta) return res.status(404).json({ message: 'Dataset not found' });
+
+    await ensureMlLoaded(req.user.id, datasetId, meta);
+
+    const pipeline = await datasetService.getPipelineByDataset(datasetId);
+    const steps = pipeline ? await datasetService.getSteps(pipeline.id) : [];
+
+    const analysis = await mlService.analyzeDataset({
+      userId: req.user.id,
+      datasetId,
+      steps,
+    });
+
+    return res.status(200).json({ dataset_id: datasetId, ...analysis });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      message: 'Analysis failed',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   uploadFile,
   listUserFiles,
@@ -477,4 +504,5 @@ module.exports = {
   reopenDataset,
   deleteDatasetHandler,
   finalizeDataset,
+  analyzeDatasetHandler,
 };
