@@ -1,13 +1,33 @@
-import { type DatasetPayload } from '@/services/data';
+import { type AnalysisPayload, type DatasetPayload } from '@/services/data';
 import styles from './ExecutiveSummary.module.css';
 
 interface ExecutiveSummaryProps {
   payload: DatasetPayload;
+  analysis?: AnalysisPayload;
 }
 
-export default function ExecutiveSummary({ payload }: ExecutiveSummaryProps) {
-  const datasetHealth = 92;
-  const confidenceScore = 87;
+function healthLabel(score: number) {
+  if (score >= 80) return 'Excellent';
+  if (score >= 60) return 'Good';
+  if (score >= 40) return 'Fair';
+  return 'Needs Attention';
+}
+
+function confidenceLabel(score: number) {
+  if (score >= 80) return 'High';
+  if (score >= 60) return 'Moderate';
+  return 'Low';
+}
+
+export default function ExecutiveSummary({ payload, analysis }: ExecutiveSummaryProps) {
+  const healthScore = analysis?.health_score ?? 92;
+  const confidenceScore = analysis?.confidence_score ?? 87;
+  const keyFindings = analysis?.key_findings ?? [
+    'Revenue increased consistently during the last six months.',
+    'Marketing investment positively impacted customer acquisition.',
+    'Several unusual transactions require investigation.',
+    'Overall operational risk remains moderate.',
+  ];
 
   return (
     <section className={styles.section}>
@@ -25,8 +45,8 @@ export default function ExecutiveSummary({ payload }: ExecutiveSummaryProps) {
             <div className={styles.metricBox}>
               <span className={styles.metricLabel}>Dataset Health Score</span>
               <div className={styles.metricValue}>
-                <strong>{datasetHealth}%</strong>
-                <span className={styles.metricBadge}>Excellent</span>
+                <strong>{healthScore}%</strong>
+                <span className={styles.metricBadge}>{healthLabel(healthScore)}</span>
               </div>
             </div>
 
@@ -48,7 +68,7 @@ export default function ExecutiveSummary({ payload }: ExecutiveSummaryProps) {
               <span className={styles.metricLabel}>AI Confidence Score</span>
               <div className={styles.metricValue}>
                 <strong>{confidenceScore}%</strong>
-                <span className={styles.confidenceBadge}>High</span>
+                <span className={styles.confidenceBadge}>{confidenceLabel(confidenceScore)}</span>
               </div>
             </div>
           </div>
@@ -58,10 +78,9 @@ export default function ExecutiveSummary({ payload }: ExecutiveSummaryProps) {
           <div className={styles.summaryText}>
             <h3 className={styles.summaryTitle}>Key Findings</h3>
             <ul className={styles.summaryList}>
-              <li>Revenue increased consistently during the last six months.</li>
-              <li>Marketing investment positively impacted customer acquisition.</li>
-              <li>Several unusual transactions require investigation.</li>
-              <li>Overall operational risk remains moderate.</li>
+              {keyFindings.map((finding, i) => (
+                <li key={i}>{finding}</li>
+              ))}
             </ul>
           </div>
         </div>

@@ -6,9 +6,11 @@ import { DashboardFooter } from '@/components/layout';
 import { useAuthHydrated } from '@/hooks';
 import {
   getPreview,
+  getAnalysis,
   resumeActiveDataset,
   setActiveDatasetId,
   type DatasetPayload,
+  type AnalysisPayload,
 } from '@/services/data';
 import styles from './AIInsightsPanel.module.css';
 import {
@@ -32,6 +34,7 @@ export default function AIInsightsPanel() {
   const queryId = searchParams.get('datasetId');
 
   const [payload, setPayload] = useState<DatasetPayload | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resolvedId, setResolvedId] = useState<number | null>(null);
@@ -45,8 +48,12 @@ export default function AIInsightsPanel() {
     setLoading(true);
     setError(null);
     try {
-      const data = await getPreview(id, INSIGHTS_ROWS, 1);
+      const [data, analysisData] = await Promise.all([
+        getPreview(id, INSIGHTS_ROWS, 1),
+        getAnalysis(id).catch(() => null),
+      ]);
       setPayload(data);
+      setAnalysis(analysisData);
       setActiveDatasetId(data.dataset_id);
       setResolvedId(data.dataset_id);
     } catch (e) {
@@ -137,32 +144,26 @@ export default function AIInsightsPanel() {
 
         {payload && (
           <>
-            {/* Executive Summary */}
-            <ExecutiveSummary payload={payload} />
-
-            {/* Quick Insight Cards */}
-            <QuickInsightCards payload={payload} />
-
-            {/* AI Recommendations */}
-            <AIRecommendations />
-
-            {/* Feature Importance Analysis */}
-            <FeatureImportanceAnalysis />
-
-            {/* Anomaly Detection Report */}
-            <AnomalyDetectionReport />
-
-            {/* Business Risk Assessment */}
-            <BusinessRiskAssessment />
-
-            {/* AI Narrative Report */}
-            <AInarrativeReport />
-
-            {/* Processing Summary */}
-            <ProcessingSummary payload={payload} />
-
-            {/* Export Report Section */}
-            <ExportReportSection />
+            {analysis && (
+              <>
+                <ExecutiveSummary payload={payload} analysis={analysis} />
+                <QuickInsightCards payload={payload} analysis={analysis} />
+                <AIRecommendations analysis={analysis} />
+                <FeatureImportanceAnalysis analysis={analysis} />
+                <AnomalyDetectionReport analysis={analysis} />
+                <BusinessRiskAssessment analysis={analysis} />
+                <AInarrativeReport analysis={analysis} />
+                <ProcessingSummary payload={payload} analysis={analysis} />
+                <ExportReportSection />
+              </>
+            )}
+            {!analysis && (
+              <>
+                <ExecutiveSummary payload={payload} />
+                <QuickInsightCards payload={payload} />
+                <ProcessingSummary payload={payload} />
+              </>
+            )}
           </>
         )}
       </div>

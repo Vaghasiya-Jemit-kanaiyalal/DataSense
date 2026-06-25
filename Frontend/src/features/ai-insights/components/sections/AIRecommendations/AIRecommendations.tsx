@@ -1,30 +1,31 @@
+import { type AnalysisPayload } from '@/services/data';
 import styles from './AIRecommendations.module.css';
 
-export default function AIRecommendations() {
-  const recommendations = [
+interface AIRecommendationsProps {
+  analysis?: AnalysisPayload;
+}
+
+export default function AIRecommendations({ analysis }: AIRecommendationsProps) {
+  const recommendations = analysis?.recommendations ?? [
     {
-      id: 1,
       icon: '💰',
       title: 'Optimize Marketing Budget',
       description: 'Reallocate 15% of budget to high-performing channels to maximize ROI.',
       priority: 'high',
     },
     {
-      id: 2,
       icon: '📉',
       title: 'Reduce Operational Expenses',
       description: 'Identify cost-saving opportunities in logistics and warehouse operations.',
       priority: 'high',
     },
     {
-      id: 3,
       icon: '🔍',
       title: 'Investigate Revenue Outliers',
-      description: 'Review 18 unusual transactions that deviate from normal patterns.',
+      description: 'Review unusual transactions that deviate from normal patterns.',
       priority: 'medium',
     },
     {
-      id: 4,
       icon: '📊',
       title: 'Improve Data Quality',
       description: 'Standardize customer segmentation and remove duplicate records.',
@@ -40,8 +41,8 @@ export default function AIRecommendations() {
       </div>
 
       <div className={styles.grid}>
-        {recommendations.map((rec) => (
-          <article key={rec.id} className={`${styles.card} ${styles[`priority_${rec.priority}`]}`}>
+          {recommendations.map((rec, i) => (
+          <article key={i} className={`${styles.card} ${styles[`priority_${rec.priority}`]}`}>
             <div className={styles.cardHeader}>
               <span className={styles.icon}>{rec.icon}</span>
               <span className={styles[`badge_${rec.priority}`]}>

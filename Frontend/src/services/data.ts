@@ -63,6 +63,61 @@ export interface CleanRequest {
   preview_rows?: number;
 }
 
+export interface AnalysisPayload {
+  dataset_id: number;
+  health_score: number;
+  confidence_score: number;
+  key_findings: string[];
+  rows: number;
+  columns: number;
+  numerical_columns: number;
+  categorical_columns: number;
+  strongest_correlation: {
+    feature_a: string;
+    feature_b: string;
+    value: number;
+  };
+  data_quality: {
+    completeness: number;
+    consistency: number;
+    validity: number;
+  };
+  feature_importance: {
+    name: string;
+    importance: number;
+    color: string;
+  }[];
+  anomalies: {
+    row_index: number;
+    column: string;
+    actual: string;
+    expected: string;
+    severity: 'critical' | 'high' | 'medium' | 'low';
+    deviation: number;
+  }[];
+  risk_assessment: {
+    overall_score: number;
+    categories: {
+      name: string;
+      score: number;
+      icon: string;
+    }[];
+  };
+  processing_summary: {
+    missing_values_count: number;
+    outliers_count: number;
+    duplicates_count: number;
+    columns_processed: number;
+  };
+  recommendations: {
+    icon: string;
+    title: string;
+    description: string;
+    priority: 'high' | 'medium' | 'low';
+  }[];
+  narrative: string;
+}
+
 export function getActiveDataset() {
   return api.get<DatasetPayload>('/data/active');
 }
@@ -87,6 +142,10 @@ export function undoStep(datasetId: number, page = 1, rows = 20) {
 
 export function finalizeDataset(datasetId: number) {
   return api.post<DatasetPayload>(`/data/${datasetId}/finalize`);
+}
+
+export function getAnalysis(datasetId: number) {
+  return api.get<AnalysisPayload>(`/data/${datasetId}/analyze`);
 }
 
 export async function deleteDataset(datasetId: number) {

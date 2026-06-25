@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './Features.module.css';
 
 /* ──────────────────────────────────────────────
@@ -141,6 +141,32 @@ const features: Feature[] = [
    ────────────────────────────────────────────── */
 
 export default function Features() {
+  const [hoverStyle, setHoverStyle] = useState<React.CSSProperties>({
+    opacity: 0,
+    left: 0,
+    top: 0,
+    width: 0,
+    height: 0,
+  });
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    setHoverStyle({
+      opacity: 1,
+      left: el.offsetLeft,
+      top: el.offsetTop,
+      width: el.offsetWidth,
+      height: el.offsetHeight,
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setHoverStyle((prev) => ({
+      ...prev,
+      opacity: 0,
+    }));
+  };
+
   return (
     <section className={styles.section} id="features">
       <div className={styles.container}>
@@ -157,13 +183,32 @@ export default function Features() {
           </p>
         </div>
 
-        <div className={styles.grid}>
+        <div className={styles.grid} onMouseLeave={handleMouseLeave}>
+          {/* Sliding background highlight */}
+          <div
+            className={styles.hoverHighlight}
+            style={{
+              opacity: hoverStyle.opacity,
+              left: `${hoverStyle.left}px`,
+              top: `${hoverStyle.top}px`,
+              width: `${hoverStyle.width}px`,
+              height: `${hoverStyle.height}px`,
+              transform: hoverStyle.opacity === 0 ? 'scale(0.95)' : 'scale(1)',
+            }}
+          />
+
           {features.map((feature) => (
-            <article key={feature.title} className={styles.card}>
-              <div className={styles.iconWrap}>{feature.icon}</div>
-              <h3 className={styles.cardTitle}>{feature.title}</h3>
-              <p className={styles.cardDesc}>{feature.description}</p>
-            </article>
+            <div
+              key={feature.title}
+              className={styles.cardWrapper}
+              onMouseEnter={handleMouseEnter}
+            >
+              <article className={styles.card}>
+                <div className={styles.iconWrap}>{feature.icon}</div>
+                <h3 className={styles.cardTitle}>{feature.title}</h3>
+                <p className={styles.cardDesc}>{feature.description}</p>
+              </article>
+            </div>
           ))}
         </div>
       </div>

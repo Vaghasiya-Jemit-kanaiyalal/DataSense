@@ -14,7 +14,6 @@ import {
   type DatasetPayload,
 } from '@/services/data';
 import {
-  DEMO_ANALYSIS,
   deriveFeatureAnalysis,
   type CorrelationStrength,
   type FeatureAnalysisResult,
@@ -116,18 +115,17 @@ export default function FeatureAnalysisPanel() {
       const resumed = await resumeActiveDataset();
       if (resumed) {
         setResolvedId(resumed.dataset_id);
+        await load(resumed.dataset_id);
         router.replace(`${ROUTES.FEATURE_ANALYSIS}?datasetId=${resumed.dataset_id}`);
       }
     }
     init();
   }, [hydrated, queryId, load, router]);
 
-  const analysis: FeatureAnalysisResult = useMemo(() => {
+  const analysis: FeatureAnalysisResult | null = useMemo(() => {
     if (payload && analyzed) return deriveFeatureAnalysis(payload);
-    return DEMO_ANALYSIS;
+    return null;
   }, [payload, analyzed]);
-
-  const isDemo = !payload || !analyzed;
 
   const scrollToRelationships = () => {
     relationshipsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -141,245 +139,262 @@ export default function FeatureAnalysisPanel() {
   const stats = [
     {
       label: 'Total Features',
-      value: analysis.totalFeatures,
+      value: analysis?.totalFeatures ?? 0,
       hint: 'All columns analyzed',
       tone: 'purple',
       icon: 'grid',
     },
     {
       label: 'Numerical Features',
-      value: analysis.numericalFeatures,
+      value: analysis?.numericalFeatures ?? 0,
       hint: 'Quantitative columns',
       tone: 'blue',
       icon: 'hash',
     },
     {
       label: 'Categorical Features',
-      value: analysis.categoricalFeatures,
+      value: analysis?.categoricalFeatures ?? 0,
       hint: 'Qualitative columns',
       tone: 'green',
       icon: 'text',
     },
     {
       label: 'Relationships Found',
-      value: analysis.relationshipsFound,
+      value: analysis?.relationshipsFound ?? 0,
       hint: 'Strong correlations',
       tone: 'cyan',
       icon: 'network',
     },
   ];
 
+  if (!datasetId && !loading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.container}>
+          <p className={styles.muted}>Upload and clean a dataset first to run feature analysis.</p>
+          <button type="button" className={styles.btnPrimary} onClick={() => router.push(ROUTES.UPLOAD)}>
+            Go to Upload
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        {isDemo && (
-          <p className={styles.demoBanner}>
-            Upload and clean a dataset to run live analysis — showing sample insights below.
-          </p>
-        )}
-
         {error && <p className={styles.errorBanner}>{error}</p>}
 
-        <section className={styles.hero}>
-          <div className={styles.heroLeft}>
-            <span className={styles.kicker}>AI-Powered Feature Discovery</span>
-            <h1 className={styles.heroTitle}>Feature Analysis</h1>
-            <p className={styles.heroDesc}>
-              Discover relationships, uncover redundant columns, and identify new AI-generated
-              features that unlock deeper insights.
-            </p>
-            <div className={styles.heroActions}>
-              <button type="button" className={styles.btnPrimary} onClick={runAnalysis}>
-                {loading ? 'Analyzing…' : 'Start Analysis →'}
-              </button>
-              <button type="button" className={styles.btnSecondary} onClick={scrollToRelationships}>
-                View Relationships
-              </button>
-            </div>
+        {loading && !payload && (
+          <div className={styles.loadingState}>
+            <p>Analyzing dataset...</p>
           </div>
-          <Image
-            src={featureAnalysisImg}
-            alt="Feature analysis illustration"
-            className={styles.heroArt}
-            priority
-          />
-        </section>
+        )}
 
-        <section className={styles.statsGrid} aria-label="Feature analysis metrics">
-          {stats.map((stat) => (
-            <article key={stat.label} className={styles.statCard}>
-              <span className={`${styles.statIcon} ${styles[`statIcon_${stat.tone}`]}`} aria-hidden="true">
-                <StatIcon name={stat.icon} />
-              </span>
-              <div className={styles.statText}>
-                <p>{stat.label}</p>
-                <strong>{stat.value}</strong>
-                <small>{stat.hint}</small>
-              </div>
-            </article>
-          ))}
-        </section>
-
-        <section className={styles.midGrid}>
-          <article className={styles.panel} ref={relationshipsRef}>
-            <div className={styles.panelHeader}>
-              <h2>Feature Relationships</h2>
-              <span className={styles.panelBadge}>{analysis.relationshipsFound} found</span>
-            </div>
-            {analysis.relationships.length === 0 ? (
-              <p className={styles.emptyNote}>No strong correlations detected yet.</p>
-            ) : (
-              <div className={styles.relationshipLayout}>
-                <div className={styles.relationshipList}>
-                  {analysis.relationships.map((rel) => (
-                    <div key={`${rel.featureA}-${rel.featureB}`} className={styles.relationshipItem}>
-                      <span className={styles.relPair}>
-                        {rel.featureA}
-                        <span>↔</span>
-                        {rel.featureB}
-                      </span>
-                      <span className={styles.relMeta}>
-                        <span className={styles.relScore}>{rel.score}%</span>
-                        <span className={`${styles.strengthBadge} ${strengthClass(rel.strength)}`}>
-                          {rel.strength}
-                        </span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className={styles.networkDiagram} aria-hidden="true">
-                  <div className={styles.networkCenter}>
-                    <BrainIcon />
-                  </div>
-                  {NETWORK_POSITIONS.map((pos, i) => (
-                    <span
-                      key={i}
-                      className={styles.networkNode}
-                      style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </article>
-
-          <article className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <h2>Low Value Features</h2>
-              <span className={styles.panelBadge}>{analysis.lowValueFeatures.length} flagged</span>
-            </div>
-            {analysis.lowValueFeatures.length === 0 ? (
-              <p className={styles.emptyNote}>No low-value columns detected.</p>
-            ) : (
-              <div className={styles.featureList}>
-                {analysis.lowValueFeatures.map((feat) => (
-                  <div key={feat.name} className={styles.featureItem}>
-                    <strong>{feat.name}</strong>
-                    <p>{feat.reason}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </article>
-        </section>
-
-        <section className={styles.bottomGrid}>
-          <article className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <h2>Redundant Features</h2>
-              <span className={styles.panelBadge}>{analysis.redundantFeatures.length} pairs</span>
-            </div>
-            {analysis.redundantFeatures.length === 0 ? (
-              <p className={styles.emptyNote}>No redundant feature pairs found.</p>
-            ) : (
-              <div className={styles.featureList}>
-                {analysis.redundantFeatures.map((pair) => (
-                  <div key={`${pair.featureA}-${pair.featureB}`} className={styles.featureItem}>
-                    <div className={styles.overlapRow}>
-                      <strong>
-                        {pair.featureA} ↔ {pair.featureB}
-                      </strong>
-                      <span className={styles.overlapPct}>{pair.overlap}%</span>
-                    </div>
-                    <div className={styles.overlapBar}>
-                      <div className={styles.overlapFill} style={{ width: `${pair.overlap}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </article>
-
-          <article className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <h2>AI Feature Suggestions</h2>
-              <span className={styles.panelBadge}>AI powered</span>
-            </div>
-            <div className={styles.suggestionList}>
-              {analysis.aiSuggestions.map((suggestion) => (
-                <div key={suggestion.name} className={styles.suggestionCard}>
-                  <ProgressRing value={suggestion.confidence} />
-                  <div className={styles.suggestionInfo}>
-                    <strong>{suggestion.name}</strong>
-                    <p>{suggestion.description}</p>
-                    <button type="button" className={styles.suggestionBtn}>
-                      Generate Feature
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <h2>Dataset Readiness</h2>
-            </div>
-            <div className={styles.readinessLayout}>
-              <div className={styles.readinessGauge}>
-                <ProgressRing value={analysis.readinessScore} size={100} stroke={8} />
-                <strong>{analysis.readinessScore}%</strong>
-                <small>ML Readiness Score</small>
-              </div>
-              <div>
-                <div className={styles.checkList}>
-                  {analysis.readinessChecks.map((check) => (
-                    <div key={check.label} className={styles.checkItem}>
-                      <span
-                        className={`${styles.checkIcon} ${check.passed ? styles.checkPass : styles.checkFail}`}
-                      >
-                        {check.passed ? <CheckIcon /> : <DashIcon />}
-                      </span>
-                      {check.label}
-                    </div>
-                  ))}
-                </div>
-                <div className={styles.readinessCta}>
-                  <p>
-                    {analysis.readinessScore >= 80
-                      ? 'Your dataset is ready for AI-powered insights.'
-                      : 'Clean and enrich your dataset to improve ML readiness.'}
-                  </p>
-                  <button
-                    type="button"
-                    className={styles.btnInsights}
-                    onClick={() => router.push(ROUTES.AI_INSIGHTS)}
-                  >
-                    <Image
-                      src={logoImg}
-                      alt=""
-                      width={88}
-                      height={24}
-                      className={styles.btnInsightsLogo}
-                      aria-hidden
-                    />
-                    Open AI Insights →
+        {payload && analysis && (
+          <>
+            <section className={styles.hero}>
+              <div className={styles.heroLeft}>
+                <span className={styles.kicker}>AI-Powered Feature Discovery</span>
+                <h1 className={styles.heroTitle}>Feature Analysis</h1>
+                <p className={styles.heroDesc}>
+                  Discover relationships, uncover redundant columns, and identify new AI-generated
+                  features that unlock deeper insights.
+                </p>
+                <div className={styles.heroActions}>
+                  <button type="button" className={styles.btnPrimary} onClick={runAnalysis}>
+                    {loading ? 'Analyzing…' : 'Run Analysis'}
+                  </button>
+                  <button type="button" className={styles.btnSecondary} onClick={scrollToRelationships}>
+                    View Relationships
                   </button>
                 </div>
               </div>
-            </div>
-          </article>
-        </section>
+              <Image
+                src={featureAnalysisImg}
+                alt="Feature analysis illustration"
+                className={styles.heroArt}
+                priority
+              />
+            </section>
+
+            <section className={styles.statsGrid} aria-label="Feature analysis metrics">
+              {stats.map((stat) => (
+                <article key={stat.label} className={styles.statCard}>
+                  <span className={`${styles.statIcon} ${styles[`statIcon_${stat.tone}`]}`} aria-hidden="true">
+                    <StatIcon name={stat.icon} />
+                  </span>
+                  <div className={styles.statText}>
+                    <p>{stat.label}</p>
+                    <strong>{stat.value}</strong>
+                    <small>{stat.hint}</small>
+                  </div>
+                </article>
+              ))}
+            </section>
+
+            <section className={styles.midGrid}>
+              <article className={styles.panel} ref={relationshipsRef}>
+                <div className={styles.panelHeader}>
+                  <h2>Feature Relationships</h2>
+                  <span className={styles.panelBadge}>{analysis.relationshipsFound} found</span>
+                </div>
+                {analysis.relationships.length === 0 ? (
+                  <p className={styles.emptyNote}>No strong correlations detected yet.</p>
+                ) : (
+                  <div className={styles.relationshipLayout}>
+                    <div className={styles.relationshipList}>
+                      {analysis.relationships.map((rel) => (
+                        <div key={`${rel.featureA}-${rel.featureB}`} className={styles.relationshipItem}>
+                          <span className={styles.relPair}>
+                            {rel.featureA}
+                            <span>↔</span>
+                            {rel.featureB}
+                          </span>
+                          <span className={styles.relMeta}>
+                            <span className={styles.relScore}>{rel.score}%</span>
+                            <span className={`${styles.strengthBadge} ${strengthClass(rel.strength)}`}>
+                              {rel.strength}
+                            </span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className={styles.networkDiagram} aria-hidden="true">
+                      <div className={styles.networkCenter}>
+                        <BrainIcon />
+                      </div>
+                      {NETWORK_POSITIONS.map((pos, i) => (
+                        <span
+                          key={i}
+                          className={styles.networkNode}
+                          style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </article>
+
+              <article className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <h2>Low Value Features</h2>
+                  <span className={styles.panelBadge}>{analysis.lowValueFeatures.length} flagged</span>
+                </div>
+                {analysis.lowValueFeatures.length === 0 ? (
+                  <p className={styles.emptyNote}>No low-value columns detected.</p>
+                ) : (
+                  <div className={styles.featureList}>
+                    {analysis.lowValueFeatures.map((feat) => (
+                      <div key={feat.name} className={styles.featureItem}>
+                        <strong>{feat.name}</strong>
+                        <p>{feat.reason}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            </section>
+
+            <section className={styles.bottomGrid}>
+              <article className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <h2>Redundant Features</h2>
+                  <span className={styles.panelBadge}>{analysis.redundantFeatures.length} pairs</span>
+                </div>
+                {analysis.redundantFeatures.length === 0 ? (
+                  <p className={styles.emptyNote}>No redundant feature pairs found.</p>
+                ) : (
+                  <div className={styles.featureList}>
+                    {analysis.redundantFeatures.map((pair) => (
+                      <div key={`${pair.featureA}-${pair.featureB}`} className={styles.featureItem}>
+                        <div className={styles.overlapRow}>
+                          <strong>
+                            {pair.featureA} ↔ {pair.featureB}
+                          </strong>
+                          <span className={styles.overlapPct}>{pair.overlap}%</span>
+                        </div>
+                        <div className={styles.overlapBar}>
+                          <div className={styles.overlapFill} style={{ width: `${pair.overlap}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+
+              <article className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <h2>AI Feature Suggestions</h2>
+                  <span className={styles.panelBadge}>AI powered</span>
+                </div>
+                <div className={styles.suggestionList}>
+                  {analysis.aiSuggestions.map((suggestion) => (
+                    <div key={suggestion.name} className={styles.suggestionCard}>
+                      <ProgressRing value={suggestion.confidence} />
+                      <div className={styles.suggestionInfo}>
+                        <strong>{suggestion.name}</strong>
+                        <p>{suggestion.description}</p>
+                        <button type="button" className={styles.suggestionBtn}>
+                          Generate Feature
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </article>
+
+              <article className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <h2>Dataset Readiness</h2>
+                </div>
+                <div className={styles.readinessLayout}>
+                  <div className={styles.readinessGauge}>
+                    <ProgressRing value={analysis.readinessScore} size={100} stroke={8} />
+                    <strong>{analysis.readinessScore}%</strong>
+                    <small>ML Readiness Score</small>
+                  </div>
+                  <div>
+                    <div className={styles.checkList}>
+                      {analysis.readinessChecks.map((check) => (
+                        <div key={check.label} className={styles.checkItem}>
+                          <span
+                            className={`${styles.checkIcon} ${check.passed ? styles.checkPass : styles.checkFail}`}
+                          >
+                            {check.passed ? <CheckIcon /> : <DashIcon />}
+                          </span>
+                          {check.label}
+                        </div>
+                      ))}
+                    </div>
+                    <div className={styles.readinessCta}>
+                      <p>
+                        {analysis.readinessScore >= 80
+                          ? 'Your dataset is ready for AI-powered insights.'
+                          : 'Clean and enrich your dataset to improve ML readiness.'}
+                      </p>
+                      <button
+                        type="button"
+                        className={styles.btnInsights}
+                        onClick={() => router.push(ROUTES.AI_INSIGHTS)}
+                      >
+                        <Image
+                          src={logoImg}
+                          alt=""
+                          width={88}
+                          height={24}
+                          className={styles.btnInsightsLogo}
+                          aria-hidden
+                        />
+                        Open AI Insights →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </section>
+          </>
+        )}
       </div>
     </div>
   );

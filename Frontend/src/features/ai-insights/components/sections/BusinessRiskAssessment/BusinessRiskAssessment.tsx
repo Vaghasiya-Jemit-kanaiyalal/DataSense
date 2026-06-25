@@ -1,22 +1,20 @@
+import { type AnalysisPayload } from '@/services/data';
 import styles from './BusinessRiskAssessment.module.css';
 
-interface RiskCategory {
-  name: string;
-  score: number;
-  color: string;
-  icon: string;
+interface BusinessRiskAssessmentProps {
+  analysis?: AnalysisPayload;
 }
 
-export default function BusinessRiskAssessment() {
-  const overallRiskScore = 72;
-  const riskLevel = 'Moderate';
-
-  const riskCategories: RiskCategory[] = [
-    { name: 'Revenue Risk', score: 45, color: '#ef4444', icon: '📈' },
-    { name: 'Expense Risk', score: 52, color: '#f59e0b', icon: '💰' },
-    { name: 'Operational Risk', score: 68, color: '#f59e0b', icon: '⚙️' },
-    { name: 'Data Quality Risk', score: 28, color: '#10b981', icon: '📊' },
+export default function BusinessRiskAssessment({ analysis }: BusinessRiskAssessmentProps) {
+  const riskAssessment = analysis?.risk_assessment;
+  const overallRiskScore = riskAssessment?.overall_score ?? 72;
+  const riskCategories = riskAssessment?.categories ?? [
+    { name: 'Revenue Risk', score: 45, icon: '📈' },
+    { name: 'Expense Risk', score: 52, icon: '💰' },
+    { name: 'Operational Risk', score: 68, icon: '⚙️' },
+    { name: 'Data Quality Risk', score: 28, icon: '📊' },
   ];
+  const riskLevel = overallRiskScore < 30 ? 'Low' : overallRiskScore < 60 ? 'Moderate' : 'High';
 
   const getRiskColor = (score: number) => {
     if (score < 30) return '#10b981';

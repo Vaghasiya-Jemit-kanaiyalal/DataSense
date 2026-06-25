@@ -1,12 +1,9 @@
-import { AppHeader } from '@/components/layout';
-
 export const metadata = { title: 'DataSense — Sign In' };
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <AppHeader variant="auth" />
-      <main className="app-main">{children}</main>
+      <main>{children}</main>
     </>
   );
 }

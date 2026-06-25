@@ -1,13 +1,12 @@
+import { type AnalysisPayload } from '@/services/data';
 import styles from './FeatureImportanceAnalysis.module.css';
 
-interface Feature {
-  name: string;
-  importance: number;
-  color: string;
+interface FeatureImportanceAnalysisProps {
+  analysis?: AnalysisPayload;
 }
 
-export default function FeatureImportanceAnalysis() {
-  const features: Feature[] = [
+export default function FeatureImportanceAnalysis({ analysis }: FeatureImportanceAnalysisProps) {
+  const features = analysis?.feature_importance ?? [
     { name: 'Marketing Spend', importance: 45, color: '#22d3ee' },
     { name: 'Customer Count', importance: 32, color: '#3b82f6' },
     { name: 'Region', importance: 14, color: '#10b981' },
@@ -51,18 +50,11 @@ export default function FeatureImportanceAnalysis() {
           <div className={styles.explanationSection}>
             <h3 className={styles.explanationTitle}>Why These Features Matter</h3>
             <div className={styles.explanationText}>
-              <p>
-                <strong>Marketing Spend (45%)</strong> is the strongest predictor of revenue growth. This reflects the direct correlation between investment in advertising and customer acquisition.
-              </p>
-              <p>
-                <strong>Customer Count (32%)</strong> demonstrates the compounding effect of building a loyal customer base. More customers correlate with higher repeat purchases.
-              </p>
-              <p>
-                <strong>Region (14%)</strong> shows geographic variations in purchasing behavior, suggesting localized market strategies could be beneficial.
-              </p>
-              <p>
-                <strong>Discount (9%)</strong> has minimal impact, indicating that aggressive discounting may not be necessary to drive sales in this market.
-              </p>
+              {features.slice(0, 4).map((f) => (
+                <p key={f.name}>
+                  <strong>{f.name} ({f.importance}%)</strong> is a significant predictor based on current dataset analysis.
+                </p>
+              ))}
             </div>
           </div>
         </div>

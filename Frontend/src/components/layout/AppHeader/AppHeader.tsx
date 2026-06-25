@@ -219,7 +219,7 @@ export default function AppHeader({ variant = 'full' }: AppHeaderProps) {
           aria-label="Show navigation header"
           onClick={showHeader}
         >
-          <ChevronLeftIcon />
+          <ChevronDownIcon />
         </button>
       )}
 
@@ -268,10 +268,10 @@ function ChevronUpIcon() {
   );
 }
 
-function ChevronLeftIcon() {
+function ChevronDownIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className={styles.controlIcon}>
-      <path d="M10 4L6 8l4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
