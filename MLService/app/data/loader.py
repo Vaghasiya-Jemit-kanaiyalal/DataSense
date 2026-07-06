@@ -1,9 +1,6 @@
 from __future__ import annotations
-
 import io
-
 import pandas as pd
-
 
 def load_file(filename: str, content: bytes) -> pd.DataFrame:
     name = filename.lower()
