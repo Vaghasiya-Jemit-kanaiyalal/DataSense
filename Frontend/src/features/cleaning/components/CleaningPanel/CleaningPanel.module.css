@@ -4,7 +4,7 @@
   min-height: calc(100vh - 68px);
   font-family: var(--font-sans);
   font-size: 0.875rem;
-  padding: 20px 24px 36px;
+  padding: calc(var(--app-header-offset, 83px) + 40px) 24px 48px;
   overflow: hidden;
   background:
     radial-gradient(circle at 8% 20%, rgba(124, 58, 237, 0.18) 0 1px, transparent 2px),
@@ -50,7 +50,7 @@
   position: relative;
   z-index: 1;
   width: min(100%, 1240px);
-  margin: 0 auto;
+  margin: 16px auto 0;
 }
 
 /* ── Header panel (gold studio theme) ── */
@@ -58,6 +58,7 @@
   display: flex;
   align-items: flex-start;
   gap: 20px;
+  margin-top: 8px;
   padding: 16px 20px;
   margin-bottom: 18px;
   border-radius: 10px;

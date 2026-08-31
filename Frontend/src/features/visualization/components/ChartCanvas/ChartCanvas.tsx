@@ -74,11 +74,20 @@ function ChartShell({
       </div>
 
       {expanded && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Expanded chart">
+        <div
+          className={styles.modalBackdrop}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Expanded chart"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) onClose();
+          }}
+        >
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
               <div className={styles.meta}>
                 {rowMeta && <span className={styles.metaPill}>{rowMeta}</span>}
+                <span className={styles.modalTitle}>Expanded Chart</span>
               </div>
               <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close expanded chart">
                 ✕

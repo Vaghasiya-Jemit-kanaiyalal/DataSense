@@ -8,7 +8,7 @@
     radial-gradient(circle at 33% 1%, rgba(124, 58, 237, 0.55) 0 1px, transparent 4px),
     radial-gradient(circle at 50% 35%, rgba(30, 64, 175, 0.12), transparent 35%),
     linear-gradient(180deg, #030712 0%, #07111f 46%, #030712 100%);
-  padding: 42px 32px 50px;
+  padding: calc(var(--app-header-offset, 83px) + 54px) 32px 50px;
 }
 
 .page::before {
@@ -27,7 +27,7 @@
   position: relative;
   z-index: 1;
   width: min(100%, 1120px);
-  margin: 0 auto;
+  margin: 16px auto 0;
 }
 
 .errorText {

@@ -7,7 +7,7 @@ import type { SignInFormData, SignUpFormData, User } from '@/types';
  */
 export const authService = {
   async signIn(data: SignInFormData): Promise<User> {
-    return api.post<User>('/auth/signin', data);
+    return api.post<User>('/auth/login', data);
   },
 
   async signUp(data: SignUpFormData): Promise<User> {

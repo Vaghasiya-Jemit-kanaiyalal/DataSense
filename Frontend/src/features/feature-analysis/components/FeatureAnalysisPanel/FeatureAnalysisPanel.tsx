@@ -7,13 +7,17 @@ import featureAnalysisImg from '@/assets/feature-analysis.jpg';
 import { ROUTES } from '@/constants/routes';
 import { useAuthHydrated } from '@/hooks';
 import {
+  cleanDataset,
+  getAnalysis,
   getPreview,
   resumeActiveDataset,
   setActiveDatasetId,
+  type AnalysisPayload,
   type DatasetPayload,
 } from '@/services/data';
 import {
   deriveFeatureAnalysis,
+  type AISuggestion,
   type CorrelationStrength,
   type FeatureAnalysisResult,
 } from '../../utils/deriveFeatureAnalysis';
@@ -24,7 +28,7 @@ const ANALYSIS_ROWS = 500;
 function ProgressRing({ value, size = 72, stroke = 6 }: { value: number; size?: number; stroke?: number }) {
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (value / 100) * circumference;
+  const offset = circumference - (Math.min(100, Math.max(0, value)) / 100) * circumference;
 
   return (
     <div className={styles.ringWrap} style={{ width: size, height: size }}>
@@ -78,8 +82,11 @@ export default function FeatureAnalysisPanel() {
 
   const queryId = searchParams.get('datasetId');
   const [payload, setPayload] = useState<DatasetPayload | null>(null);
+  const [analysisData, setAnalysisData] = useState<AnalysisPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [generatingFeature, setGeneratingFeature] = useState<string | null>(null);
   const [resolvedId, setResolvedId] = useState<number | null>(null);
   const [analyzed, setAnalyzed] = useState(false);
 
@@ -92,11 +99,19 @@ export default function FeatureAnalysisPanel() {
     setLoading(true);
     setError(null);
     try {
-      const data = await getPreview(id, ANALYSIS_ROWS, 1);
-      setPayload(data);
-      setActiveDatasetId(data.dataset_id);
-      setResolvedId(data.dataset_id);
+      const previewData = await getPreview(id, ANALYSIS_ROWS, 1);
+      setPayload(previewData);
+      setActiveDatasetId(previewData.dataset_id);
+      setResolvedId(previewData.dataset_id);
       setAnalyzed(true);
+
+      // Fetch real MLService analysis asynchronously
+      try {
+        const mlRes = await getAnalysis(id);
+        setAnalysisData(mlRes);
+      } catch (mlErr) {
+        console.warn('[FeatureAnalysis] ML backend analysis fetch warning:', mlErr);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load dataset');
     } finally {
@@ -122,9 +137,21 @@ export default function FeatureAnalysisPanel() {
   }, [hydrated, queryId, load, router]);
 
   const analysis: FeatureAnalysisResult | null = useMemo(() => {
-    if (payload && analyzed) return deriveFeatureAnalysis(payload);
+    if (payload && analyzed) {
+      const derived = deriveFeatureAnalysis(payload);
+      if (analysisData) {
+        return {
+          ...derived,
+          totalFeatures: analysisData.columns || derived.totalFeatures,
+          numericalFeatures: analysisData.numerical_columns || derived.numericalFeatures,
+          categoricalFeatures: analysisData.categorical_columns || derived.categoricalFeatures,
+          readinessScore: analysisData.health_score ?? derived.readinessScore,
+        };
+      }
+      return derived;
+    }
     return null;
-  }, [payload, analyzed]);
+  }, [payload, analyzed, analysisData]);
 
   const scrollToRelationships = () => {
     relationshipsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -133,6 +160,59 @@ export default function FeatureAnalysisPanel() {
   const runAnalysis = () => {
     if (datasetId) load(datasetId);
     else router.push(ROUTES.UPLOAD);
+  };
+
+  const handleGenerateFeature = async (suggestion: AISuggestion) => {
+    if (!datasetId) return;
+    setGeneratingFeature(suggestion.name);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      let featA = '';
+      let featB = '';
+      let op = '/';
+
+      if (suggestion.formula.includes('/')) {
+        const parts = suggestion.formula.split('/');
+        featA = parts[0].trim();
+        featB = parts[1].trim();
+        op = '/';
+      } else if (suggestion.formula.includes('*')) {
+        const parts = suggestion.formula.split('*');
+        featA = parts[0].trim();
+        featB = parts[1].trim();
+        op = '*';
+      } else if (suggestion.formula.includes('+')) {
+        const parts = suggestion.formula.split('+');
+        featA = parts[0].trim();
+        featB = parts[1].trim();
+        op = '+';
+      } else if (suggestion.formula.includes('-')) {
+        const parts = suggestion.formula.split('-');
+        featA = parts[0].trim();
+        featB = parts[1].trim();
+        op = '-';
+      }
+
+      await cleanDataset({
+        dataset_id: datasetId,
+        action: 'create_feature',
+        new_column: suggestion.name,
+        name: suggestion.name,
+        feature_a: featA || payload?.numerical_columns[0] || '',
+        feature_b: featB || payload?.numerical_columns[1] || '',
+        operator: op,
+        formula: suggestion.formula,
+      });
+
+      setSuccessMessage(`New feature "${suggestion.name}" created and added to dataset!`);
+      await load(datasetId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate feature');
+    } finally {
+      setGeneratingFeature(null);
+    }
   };
 
   const stats = [
@@ -182,11 +262,12 @@ export default function FeatureAnalysisPanel() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        {error && <p className={styles.errorBanner}>{error}</p>}
+        {error && <div className={styles.errorBanner}>{error}</div>}
+        {successMessage && <div className={styles.successBanner}>{successMessage}</div>}
 
         {loading && !payload && (
           <div className={styles.loadingState}>
-            <p>Analyzing dataset...</p>
+            <p>Analyzing dataset with ML engine...</p>
           </div>
         )}
 
@@ -334,8 +415,13 @@ export default function FeatureAnalysisPanel() {
                       <div className={styles.suggestionInfo}>
                         <strong>{suggestion.name}</strong>
                         <p>{suggestion.description}</p>
-                        <button type="button" className={styles.suggestionBtn}>
-                          Generate Feature
+                        <button
+                          type="button"
+                          className={styles.suggestionBtn}
+                          disabled={generatingFeature === suggestion.name}
+                          onClick={() => handleGenerateFeature(suggestion)}
+                        >
+                          {generatingFeature === suggestion.name ? 'Generating...' : 'Generate Feature'}
                         </button>
                       </div>
                     </div>

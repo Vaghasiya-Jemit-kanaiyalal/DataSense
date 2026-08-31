@@ -56,7 +56,7 @@ def _feature_importance(df: pd.DataFrame, numeric_cols: list[str], categorical_c
     total = sum(it["importance"] for it in items) or 1
     for it in items:
         it["importance"] = round((it["importance"] / total) * 100, 1)
-    return sorted(items, key=lambda x: x["importance"], reverse=True)[:8]
+    return sorted(items, key=lambda x: x["importance"], reverse=True)[:20]
 
 
 def _anomalies(df: pd.DataFrame, numeric_cols: list[str]) -> list[dict]:
