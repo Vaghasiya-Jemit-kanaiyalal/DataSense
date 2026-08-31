@@ -13,6 +13,7 @@ const {
   deleteDatasetHandler,
   finalizeDataset,
   analyzeDatasetHandler,
+  predictDatasetHandler,
 } = require('../controllers/dataController');
 
 router.post('/upload', verifyToken, ...uploadFile);
@@ -24,6 +25,7 @@ router.get('/active', verifyToken, getActive);
 router.get('/preview/:id', verifyToken, previewFile);
 router.post('/clean', verifyToken, cleanDataset);
 router.get('/:datasetId/analyze', verifyToken, analyzeDatasetHandler);
+router.post('/:datasetId/predict', verifyToken, predictDatasetHandler);
 router.post('/:datasetId/undo', verifyToken, undoStep);
 router.post('/:datasetId/finalize', verifyToken, finalizeDataset);
 

@@ -150,8 +150,34 @@ export function finalizeDataset(datasetId: number) {
   return api.post<DatasetPayload>(`/data/${datasetId}/finalize`);
 }
 
+export interface PredictionPayload {
+  dataset_id: number;
+  target_variable: string;
+  model_used?: string;
+  accuracy: number;
+  r2_score: number;
+  error_margin: number;
+  confidence_rating: string;
+  chart_data: Array<{ name: string; Actual: number | null; Predicted: number | null }>;
+  importance_data: Array<{ name: string; importance: number; color: string }>;
+  records_trained: number;
+}
+
 export function getAnalysis(datasetId: number) {
   return api.get<AnalysisPayload>(`/data/${datasetId}/analyze`);
+}
+
+export function predictDataset(
+  datasetId: number,
+  targetVariable: string,
+  modelType = 'auto',
+  forecastSteps = 15,
+) {
+  return api.post<PredictionPayload>(`/data/${datasetId}/predict`, {
+    target_column: targetVariable,
+    model_type: modelType,
+    forecast_steps: forecastSteps,
+  });
 }
 
 export async function deleteDataset(datasetId: number) {

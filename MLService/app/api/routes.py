@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.analysis.analyzer import analyze_dataset
 from app.data import loader, preview, stats, store
+from app.predictions.predictor import train_and_predict
 from app.preprocessings.Preprocessing_pipeline import PreprocessingPipeline
 
 router = APIRouter(prefix="/data", tags=["data"])
@@ -15,6 +16,15 @@ class PreprocessRequest(BaseModel):
     dataset_id: int
     preview_rows: int = 20
     offset: int = 0
+    steps: list = []
+
+
+class PredictRequest(BaseModel):
+    user_id: int
+    dataset_id: int
+    target_column: str
+    model_type: str = "auto"
+    forecast_steps: int = 15
     steps: list = []
 
 
@@ -79,6 +89,20 @@ async def analyze(body: PreprocessRequest):
         if body.steps:
             df = PreprocessingPipeline.run(df, body.steps)
         result = analyze_dataset(body.user_id, body.dataset_id, df)
+        return {"dataset_id": body.dataset_id, **result}
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/predict")
+async def predict(body: PredictRequest):
+    try:
+        df = store.get(body.user_id, body.dataset_id)
+        if body.steps:
+            df = PreprocessingPipeline.run(df, body.steps)
+        result = train_and_predict(df, body.target_column, body.model_type, body.forecast_steps)
         return {"dataset_id": body.dataset_id, **result}
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
