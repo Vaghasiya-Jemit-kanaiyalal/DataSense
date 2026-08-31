@@ -348,7 +348,7 @@
 
 .collapseHeaderBtn {
   position: fixed;
-  top: 88px;
+  top: 83px;
   left: 50%;
   z-index: 1001;
   display: grid;

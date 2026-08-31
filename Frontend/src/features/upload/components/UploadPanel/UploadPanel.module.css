@@ -8,7 +8,7 @@
     radial-gradient(circle at 88% 55%, rgba(124, 58, 237, 0.34) 0 2px, transparent 4px),
     radial-gradient(circle at 12% 65%, rgba(59, 130, 246, 0.16), transparent 28%),
     linear-gradient(180deg, #050813 0%, #070a16 42%, #05070d 100%);
-  padding: 42px 24px 28px;
+  padding: calc(var(--app-header-offset, 83px) + 54px) 24px 28px;
 }
 
 .page::before {
@@ -32,7 +32,7 @@
   position: relative;
   z-index: 1;
   width: min(100%, 1066px);
-  margin: 0 auto;
+  margin: 16px auto 0;
 }
 
 .sectionHeader {

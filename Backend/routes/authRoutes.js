@@ -11,6 +11,7 @@ const {
 
 router.post("/signup", signup);
 router.post("/login", login);
+router.post("/signin", login);
 router.post("/refresh", refresh);
 
 module.exports = router;

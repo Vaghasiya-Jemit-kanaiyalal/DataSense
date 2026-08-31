@@ -5,13 +5,14 @@ const STEP_LABELS = {
   replace_values: 'Replace Values',
   drop_column: 'Drop Column',
   encoding: 'Encoding',
+  create_feature: 'Create Feature',
 };
 
 function formatStepHistory(steps) {
   return steps.map((step) => {
     const label = STEP_LABELS[step.type] || step.type;
-    const col = step.params?.[0]?.column;
-    const strategy = step.params?.[0]?.strategy;
+    const col = step.params?.[0]?.column || step.params?.[0]?.new_column || step.params?.[0]?.name;
+    const strategy = step.params?.[0]?.strategy || step.params?.[0]?.formula || step.params?.[0]?.operator;
     let detail = label;
     if (col) detail = `${label} · ${col}`;
     if (strategy) detail += ` (${strategy})`;

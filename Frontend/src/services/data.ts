@@ -58,6 +58,12 @@ export interface CleanRequest {
   columns?: string[];
   old_value?: string;
   new_value?: string;
+  new_column?: string;
+  name?: string;
+  feature_a?: string;
+  feature_b?: string;
+  operator?: string;
+  formula?: string;
   params?: Record<string, unknown>[];
   offset?: number;
   preview_rows?: number;

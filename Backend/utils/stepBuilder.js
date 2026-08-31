@@ -61,6 +61,22 @@ function buildStep(body, stepIndex) {
     };
   }
 
+  if (action === 'create_feature') {
+    return {
+      step_index: stepIndex,
+      type: 'create_feature',
+      params: rawParams || [
+        {
+          new_column: body.new_column || body.name,
+          feature_a: body.feature_a,
+          feature_b: body.feature_b,
+          operator: body.operator || '/',
+          formula: body.formula,
+        },
+      ],
+    };
+  }
+
   throw new Error(`Unsupported cleaning action: ${action}`);
 }
 
