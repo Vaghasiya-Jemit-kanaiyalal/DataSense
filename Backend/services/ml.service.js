@@ -74,4 +74,26 @@ async function analyzeDataset({ userId, datasetId, steps = [] }) {
   return data;
 }
 
-module.exports = { uploadDataset, preprocessDataset, analyzeDataset };
+async function predictDataset({ userId, datasetId, targetColumn, modelType = 'auto', forecastSteps = 15, steps = [] }) {
+  const res = await fetch(`${ML_BASE}/data/predict`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: userId,
+      dataset_id: datasetId,
+      target_column: targetColumn,
+      model_type: modelType,
+      forecast_steps: forecastSteps,
+      steps,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(formatMlError(data) || 'ML prediction failed');
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+module.exports = { uploadDataset, preprocessDataset, analyzeDataset, predictDataset };

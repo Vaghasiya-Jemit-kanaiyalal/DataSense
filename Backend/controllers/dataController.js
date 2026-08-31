@@ -493,6 +493,41 @@ const analyzeDatasetHandler = async (req, res) => {
   }
 };
 
+const predictDatasetHandler = async (req, res) => {
+  try {
+    await init();
+    const datasetId = Number(req.params.datasetId);
+    const targetColumn = req.body.target_column || req.body.targetVariable;
+    if (!targetColumn) {
+      return res.status(400).json({ message: 'target_column is required' });
+    }
+
+    const meta = await datasetService.getDataset(req.user.id, datasetId);
+    if (!meta) return res.status(404).json({ message: 'Dataset not found' });
+
+    await ensureMlLoaded(req.user.id, datasetId, meta);
+
+    const pipeline = await datasetService.getPipelineByDataset(datasetId);
+    const steps = pipeline ? await datasetService.getSteps(pipeline.id) : [];
+
+    const prediction = await mlService.predictDataset({
+      userId: req.user.id,
+      datasetId,
+      targetColumn,
+      modelType: req.body.model_type || req.body.modelType || 'auto',
+      forecastSteps: Number(req.body.forecast_steps) || 15,
+      steps,
+    });
+
+    return res.status(200).json({ dataset_id: datasetId, ...prediction });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      message: 'Prediction failed',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   uploadFile,
   listUserFiles,
@@ -505,4 +540,5 @@ module.exports = {
   deleteDatasetHandler,
   finalizeDataset,
   analyzeDatasetHandler,
+  predictDatasetHandler,
 };

@@ -13,6 +13,7 @@ import {
   getPreview,
   resumeActiveDataset,
   getDatasetName,
+  predictDataset,
   type DatasetPayload,
 } from '@/services/data';
 import styles from './PredictionPanel.module.css';
@@ -35,7 +36,10 @@ export default function PredictionPanel() {
 
   const [payload, setPayload] = useState<DatasetPayload | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [targetVariable, setTargetVariable] = useState<string>('');
+  const [selectedModel, setSelectedModel] = useState<string>('auto');
+  const [usedModelName, setUsedModelName] = useState<string>('Random Forest Regressor');
   const [isTraining, setIsTraining] = useState(false);
   const [trainingStep, setTrainingStep] = useState(0);
   const [showResults, setShowResults] = useState(false);
@@ -82,106 +86,40 @@ export default function PredictionPanel() {
     }
   }, [hydrated, datasetId, loadDataset, router]);
 
-  const runPredictionModel = () => {
+  const runPredictionModel = async () => {
+    if (!datasetId || !targetVariable) return;
     setIsTraining(true);
     setShowResults(false);
     setTrainingStep(0);
+    setError(null);
 
-    // Simulate training steps
     let currentStep = 0;
     const interval = setInterval(() => {
       currentStep++;
-      if (currentStep < PREDICTION_STEPS.length) {
+      if (currentStep < PREDICTION_STEPS.length - 1) {
         setTrainingStep(currentStep);
-      } else {
-        clearInterval(interval);
-        generateMockResults();
-        setIsTraining(false);
-        setShowResults(true);
       }
-    }, 800);
-  };
+    }, 400);
 
-  const generateMockResults = () => {
-    if (!payload || !targetVariable) return;
+    try {
+      const res = await predictDataset(datasetId, targetVariable, selectedModel);
+      clearInterval(interval);
+      setTrainingStep(PREDICTION_STEPS.length - 1);
 
-    // Generate highly accurate Actual vs Predicted data
-    const dataSlice = payload.data.slice(0, 40).filter(row => row[targetVariable] !== undefined && row[targetVariable] !== null);
-    
-    const newChartData: any[] = [];
-    
-    // 1. Historical Actuals (Days 1 to 40)
-    dataSlice.forEach((row, idx) => {
-      const actual = Number(row[targetVariable]);
-      newChartData.push({
-        name: `Day ${idx + 1}`,
-        Actual: Math.round(actual * 100) / 100,
-        Predicted: null
-      });
-    });
-
-    // 2. Future Forecast / Predictions (Days 41 to 55)
-    if (newChartData.length > 0) {
-      const lastActual = newChartData[newChartData.length - 1].Actual;
-      // Set the transition point so the prediction line connects to the actual line
-      newChartData[newChartData.length - 1].Predicted = lastActual;
-
-      // Compute a simple trend to make it look realistic
-      let trend = 0;
-      if (dataSlice.length > 5) {
-        const lastFew = dataSlice.slice(-5).map(row => Number(row[targetVariable]));
-        trend = (lastFew[lastFew.length - 1] - lastFew[0]) / lastFew.length;
-      }
-
-      let currentVal = lastActual;
-      for (let i = 1; i <= 15; i++) {
-        const dayIdx = dataSlice.length + i;
-        const noise = (Math.random() - 0.45) * (lastActual * 0.015);
-        currentVal = currentVal + trend + noise;
-        newChartData.push({
-          name: `Day ${dayIdx} (Forecast)`,
-          Actual: null,
-          Predicted: Math.round(currentVal * 100) / 100
-        });
-      }
+      setAccuracy(res.accuracy);
+      setR2Score(res.r2_score);
+      setErrorMargin(res.error_margin);
+      setConfidenceRating(res.confidence_rating);
+      setUsedModelName(res.model_used || 'Random Forest Regressor');
+      setChartData(res.chart_data || []);
+      setImportanceData(res.importance_data || []);
+      setShowResults(true);
+    } catch (err: any) {
+      clearInterval(interval);
+      setError(err?.message || 'Failed to train prediction model.');
+    } finally {
+      setIsTraining(false);
     }
-
-    // Generate Feature Importance
-    const otherFeatures = [...(payload.numerical_columns || []), ...(payload.categorical_columns || [])].filter(c => c !== targetVariable);
-    
-    const topFeatures = otherFeatures.slice(0, 5);
-    let remainingPercentage = 100;
-    
-    const newImportanceData = topFeatures.map((feat: string, idx: number) => {
-      const isLast = idx === topFeatures.length - 1;
-      const val = isLast ? remainingPercentage : Math.floor(Math.random() * (remainingPercentage * 0.6)) + 5;
-      remainingPercentage -= val;
-      return {
-        name: feat.length > 10 ? feat.substring(0, 10) + '...' : feat,
-        Importance: val
-      };
-    }).sort((a: any, b: any) => b.Importance - a.Importance);
-
-    setChartData(newChartData);
-    setImportanceData(newImportanceData);
-
-    // Dynamic metrics generation based on the target variable
-    let hash = 0;
-    for (let i = 0; i < targetVariable.length; i++) {
-      hash = targetVariable.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const seed = Math.abs(hash) % 100;
-    const accVal = Math.round((94.5 + (seed % 50) * 0.1) * 10) / 10;
-    const r2Val = Math.round((0.93 + (seed % 60) * 0.001) * 1000) / 1000;
-    const errVal = Math.round((0.8 + (seed % 25) * 0.1) * 10) / 10;
-    let rating = 'Excellent';
-    if (accVal > 98.0) rating = 'Outstanding';
-    else if (accVal < 96.0) rating = 'Very Good';
-
-    setAccuracy(accVal);
-    setR2Score(r2Val);
-    setErrorMargin(errVal);
-    setConfidenceRating(rating);
   };
 
   if (!hydrated || loading) {
@@ -209,6 +147,7 @@ export default function PredictionPanel() {
   return (
     <div className={styles.page}>
       <div className={styles.container}>
+        {error && <div className={styles.errorBanner}>{error}</div>}
         <section className={styles.hero}>
           <div className={styles.heroLeft}>
             <span className={styles.kicker}>Financial Forecasting</span>
@@ -264,6 +203,23 @@ export default function PredictionPanel() {
               </select>
             </div>
 
+            <div className={styles.controlGroup}>
+              <label>ML Algorithm / Model</label>
+              <select 
+                className={styles.select} 
+                value={selectedModel} 
+                onChange={(e) => setSelectedModel(e.target.value)}
+                disabled={isTraining}
+              >
+                <option value="auto">🤖 Auto Ensemble (Best Model)</option>
+                <option value="random_forest">🌲 Random Forest Regressor</option>
+                <option value="gradient_boosting">🚀 Gradient Boosting Regressor</option>
+                <option value="linear_regression">📈 Linear Regression</option>
+                <option value="ridge">⚖️ Ridge Regression</option>
+                <option value="decision_tree">🌿 Decision Tree Regressor</option>
+              </select>
+            </div>
+
             <button 
               className={styles.btnPrimary}
               style={{ height: 48, padding: '0 24px' }}
@@ -285,6 +241,12 @@ export default function PredictionPanel() {
       {showResults && !isTraining && (
         <div className={styles.resultsContainer}>
           <div className={styles.metricsGrid}>
+            <div className={styles.metricBox}>
+              <div className={styles.metricValue} style={{ fontSize: '0.95rem', color: '#c4b5fd', fontWeight: 700 }}>
+                {usedModelName}
+              </div>
+              <div className={styles.metricLabel}>Trained ML Model</div>
+            </div>
             <div className={styles.metricBox}>
               <div className={styles.metricValue}>{accuracy}%</div>
               <div className={styles.metricLabel}>Model Accuracy</div>
